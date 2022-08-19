@@ -10,7 +10,7 @@ class ConversionTests(unittest.TestCase):
         """Runs before every test function."""
 
         # Number of quaternions or vectors to use in tests.
-        self.n = 1000
+        self.n = 100
 
     def check_eq(self, a, b, atol=1e-8):
         """Test for approximate equality."""

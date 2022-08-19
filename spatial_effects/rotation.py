@@ -1,3 +1,5 @@
+from math import pi
+
 import numpy as np
 
 from .common import reshape_nx3
@@ -118,3 +120,37 @@ def vector_quaternion(v):
         return vq.squeeze()
     else:
         return vq
+
+
+def rrand(*args):
+    """Generate a random rotation vector on the unit sphere whose norm
+    is a rotation angle in [0, 2pi).
+    """
+    if len(args) == 0:
+        n = 1
+    elif len(args) == 1:
+        assert isinstance(args[0], int), (
+            "Argument must be an integer number of rotation vectors"
+            f" to generate. Received type {type(args[0])}"
+        )
+        n: int = args[0]
+    else:
+        raise ValueError("rrand accepts zero or one arguments.")
+
+    vecs = np.random.randn(n, 3)
+    norms = np.linalg.norm(vecs, axis=1)
+
+    # Resample any points that are too close to zero for safe normalization
+    shorties = np.isclose(norms, 0.0)
+    while np.any(shorties):
+        vecs[shorties] = np.random.randn(np.count_nonzero(shorties), 3)
+        norms[shorties] = np.linalg.norm(vecs[shorties], axis=1)
+        shorties = np.isclose(norms, 0.0)
+
+    # Normalize to a random value in [0, 2pi)
+    vecs = 2 * pi * np.random.uniform(size=[n, 1]) * vecs / norms[:, np.newaxis]
+
+    if len(args) == 0:
+        vecs = vecs.ravel()
+
+    return vecs

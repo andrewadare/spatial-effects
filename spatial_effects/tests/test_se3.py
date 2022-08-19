@@ -10,7 +10,7 @@ from spatial_effects.se3 import SE3
 class SE3Tests(unittest.TestCase):
     def setUp(self):
         """Runs before every test function."""
-        pass
+        np.set_printoptions(precision=5, suppress=True)
 
     def check_eq(self, a, b, rtol=1e-4, atol=0):
         """Test for approximate equality."""
@@ -75,3 +75,8 @@ class SE3Tests(unittest.TestCase):
         r = sfx.quaternion_to_vector(sfx.qrand())
         a = SE3(randn(3), r)
         self.check_eq(r, a.r)
+
+    def test_se3_inverse(self):
+        print("\ntest_se3_inverse")
+        a = SE3(randn(3), sfx.rrand())
+        self.check_eq((a.inverse * a).matrix, np.eye(4), atol=1e-6)
