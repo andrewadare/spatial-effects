@@ -45,17 +45,16 @@ class RotationTests(unittest.TestCase):
         num_samples = 100_000
         vecs = sfx.rrand(num_samples)
 
-        # The polar distribution is proportional to sin(theta).
-        # thetas = np.arccos(vecs[:, 2] / lengths)
-
-        # Check that the distribution of azimuthal angles is uniform.
+        # Check that the distribution of azimuthal angles is uniform with
+        # a chi squared test comparing observed counts/bin (phi_hist) vs.
+        # expected counts/bin (mu).
         num_bins = 10
         vecs /= np.linalg.norm(vecs, axis=1)[:, np.newaxis]
         phis = np.arctan2(vecs[:, 1], vecs[:, 0])
         phi_hist, phi_bin_edges = np.histogram(phis, bins=num_bins, range=[-pi, pi])
-
-        # Compare observed counts/bin (phi_hist) to expected counts/bin (mu)
-        # using a chi squared test.
         mu = num_samples / num_bins
         chi_squared = np.sum(1 / mu * (phi_hist - mu) ** 2)
         self.assertLess(chi_squared / num_bins, 3.0)
+
+        # TODO: test that the polar distribution is proportional to sin(theta).
+        # thetas = np.arccos(vecs[:, 2] / lengths)

@@ -93,10 +93,6 @@ def qrotate(x, q):
         return x4.squeeze()
     else:
         raise ValueError(f"Invalid array shape(s) x {x.shape}, q {q.shape}")
-    # This also works, but is slower:
-    # p = expq(x/2)
-    # x4 = qmult(q, qmult(p, qinv(q)))
-    # return 2*logq(x4)
 
 
 def vector_quaternion(v):
@@ -122,21 +118,20 @@ def vector_quaternion(v):
         return vq
 
 
-def rrand(*args):
-    """Generate a random rotation vector on the unit sphere whose norm
+def rrand(n: int = 1) -> np.ndarray:
+    """Generate `n` random rotation vectors on the unit sphere whose norm
     is a rotation angle in [0, 2pi).
-    """
-    if len(args) == 0:
-        n = 1
-    elif len(args) == 1:
-        assert isinstance(args[0], int), (
-            "Argument must be an integer number of rotation vectors"
-            f" to generate. Received type {type(args[0])}"
-        )
-        n: int = args[0]
-    else:
-        raise ValueError("rrand accepts zero or one arguments.")
 
+    Parameters
+    ----------
+    n: Number of rotation vectors to generate
+
+    Returns
+    -------
+    array containing n random axis-angle vectors normalized to random rotation angles
+    """
+
+    # Get random rotation axes by sampling from an isotropic Gaussian
     vecs = np.random.randn(n, 3)
     norms = np.linalg.norm(vecs, axis=1)
 
@@ -150,7 +145,7 @@ def rrand(*args):
     # Normalize to a random value in [0, 2pi)
     vecs = 2 * pi * np.random.uniform(size=[n, 1]) * vecs / norms[:, np.newaxis]
 
-    if len(args) == 0:
+    if n == 1:
         vecs = vecs.ravel()
 
     return vecs

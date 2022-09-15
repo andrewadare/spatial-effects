@@ -7,7 +7,6 @@ from setuptools import setup, find_packages
 MODULE_NAME = "spatial_effects"
 DEPENDENCIES = [
     "numpy",
-    "black",
 ]
 
 
