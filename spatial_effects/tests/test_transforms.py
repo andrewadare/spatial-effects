@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from spatial_effects import SE3, Transform, TransformTree
+from spatial_effects import SE3, Transform, TransformForest
 
 
 class TransformTests(unittest.TestCase):
@@ -33,7 +33,7 @@ class TransformTests(unittest.TestCase):
                 SE3([1, 0, 0], [0, 0, 0]), "disconnected_child", "disconnected_parent"
             ),
         ]
-        self.tt = TransformTree(transforms)
+        self.tf = TransformForest(transforms)
 
     def check_eq(self, a, b, atol=1e-8):
         """Test for approximate equality."""
@@ -47,27 +47,27 @@ class TransformTests(unittest.TestCase):
     def test_tree_traversal_1(self):
         """Identity"""
         print("\ntest_tree_traversal_1")
-        self.assertEqual(self.tt.get_se3("l_knee", "l_knee"), SE3())
+        self.assertEqual(self.tf.get_se3("l_knee", "l_knee"), SE3())
 
     def test_tree_traversal_2(self):
         """Symmetry"""
         print("\ntest_tree_traversal_2")
         self.assertEqual(
-            self.tt.get_se3("l_knee", "r_knee"),
-            self.tt.get_se3("r_knee", "l_knee").inverse,
+            self.tf.get_se3("l_knee", "r_knee"),
+            self.tf.get_se3("r_knee", "l_knee").inverse,
         )
 
     def test_tree_traversal_3(self):
         """Invalid frame name"""
         print("\ntest_tree_traversal_3")
-        self.assertRaises(ValueError, self.tt.get_se3, "bogus_frame", "origin")
+        self.assertRaises(ValueError, self.tf.get_se3, "bogus_frame", "origin")
 
     def test_tree_traversal_4(self):
         """Disconnected trees"""
         print("\ntest_tree_traversal_4")
-        self.assertRaises(ValueError, self.tt.get_se3, "disconnected_child", "l_elbow")
+        self.assertRaises(ValueError, self.tf.get_se3, "disconnected_child", "l_elbow")
 
     def test_tree_traversal_5(self):
         """Disconnected trees"""
         print("\ntest_tree_traversal_5")
-        self.tt.get_se3("disconnected_child", "disconnected_parent")
+        self.tf.get_se3("disconnected_child", "disconnected_parent")

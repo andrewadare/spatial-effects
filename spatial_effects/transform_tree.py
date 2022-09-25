@@ -13,33 +13,58 @@ class Transform:
     timestamp: Any = None
 
 
-class TransformTree:
-    def __init__(self, transforms: list[Transform] = []):
-        # Maps child frame ID => Transform
-        self._transforms: dict[str, Transform] = dict()
-        self._parents_to_children: dict[str, set[str]] = dict()
-        self._children_to_parents: list[dict[str, Union[str, None]]] = []
-        if transforms:
-            self.update(transforms)
+@dataclass
+class TreePath:
+    a_up: list[str]
+    b_up: list[str]
+
+
+@dataclass
+class FrameTree:
+    """Maintains a tree of coordinate frame names and supports
+    querying the tree for paths. No geometry info here.
+    """
+
+    # child frames => parent frames. parent is None if child is a root node
+    _path: dict[str, Union[str, None]]
 
     @property
-    def transforms(self):
-        return self._transforms
+    def path(self):
+        return self._path
 
     @property
-    def root_nodes(self):
+    def root(self):
         # By construction, the root node is always the first
         # key in the child => parent dictionary and its parent is
         # always None.
-        return [next(iter(d)) for d in self._children_to_parents]
+        return next(iter(self._path))
 
-    @property
-    def tree(self):
-        return self._parents_to_children
+    def __contains__(self, k):
+        return k in self._path
 
-    @property
-    def paths(self):
-        return self._children_to_parents
+    def get_path(self, frame_a: str, frame_b: str) -> Union[TreePath, None]:
+        if frame_a not in self._path or frame_b not in self._path:
+            return None
+
+        # Find paths from a and b up to the root
+        # TODO: find and remove any common nodes (set intersection)
+        a_up: list[str] = traverse_up(self._path, frame_a)
+        b_up: list[str] = traverse_up(self._path, frame_b)
+
+        return TreePath(a_up, b_up)
+
+
+class TransformForest:
+    """Transform manager class that handles dynamic updating and disjoint
+    transform trees.
+    """
+
+    def __init__(self, transforms: list[Transform] = []):
+        # Maps child frame ID => Transform
+        self._transforms: dict[str, Transform] = dict()
+        self._trees: list[FrameTree] = []
+        if transforms:
+            self.update(transforms)
 
     def update(self, t: Union[Transform, list[Transform]]):
         if isinstance(t, Transform):
@@ -52,8 +77,21 @@ class TransformTree:
         else:
             raise ValueError(f"Unsupported type {type(t)}")
 
-        self._parents_to_children = map_parents_to_children(self._transforms)
-        self._children_to_parents = map_children_to_parents(self._parents_to_children)
+        graph = map_parents_to_children(self._transforms)
+        paths_up = map_children_to_parents(graph)
+        self._trees = [FrameTree(p) for p in paths_up]
+
+    @property
+    def transforms(self):
+        return self._transforms
+
+    @property
+    def size(self):
+        return len(self._trees)
+
+    @property
+    def trees(self):
+        return self._trees
 
     def get_se3(self, frame_a: str, frame_b: str) -> SE3:
         """Compute the SE(3) transformation from frame_a to frame_b.
@@ -74,29 +112,27 @@ class TransformTree:
         ValueError if no path is found from frame_a to frame_b
         """
 
-        paths = self._children_to_parents
+        # Find the tree containing a and b
+        tree = None
+        for t in self._trees:
+            if frame_a in t and frame_b in t:
+                tree = t
+                break
+        if tree is None:
+            raise ValueError(f"No tree found for {frame_a}, {frame_b}")
 
-        assert isinstance(paths, list)
-        assert len(paths) > 0
-        for path in paths:
-            assert isinstance(path, dict)
+        # Find the path from a -> b
+        tree_path = tree.get_path(frame_a, frame_b)
+        if tree_path is None:
+            raise ValueError(f"No path found for {frame_a} -> {frame_b}")
 
-        for path in paths:
-            if frame_a not in path or frame_b not in path:
-                continue
-
-            # Find paths from a and b up to the root
-            a_up: list[str] = traverse_up(path, frame_a)
-            b_up: list[str] = traverse_up(path, frame_b)
-
-            # Create transform chains
-            a, b = SE3(), SE3()
-            for frame in a_up[:-1]:
-                a = self._transforms[frame].se3 * a
-            for frame in b_up[:-1]:
-                b = self._transforms[frame].se3 * b
-            return b.inverse * a
-        raise ValueError(f"No path from {frame_a} to {frame_b}")
+        # Compute the chain of transforms
+        a, b = SE3(), SE3()
+        for frame in tree_path.a_up[:-1]:
+            a = self._transforms[frame].se3 * a
+        for frame in tree_path.b_up[:-1]:
+            b = self._transforms[frame].se3 * b
+        return b.inverse * a
 
 
 def bfs(g: dict, root: Any):

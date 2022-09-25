@@ -5,22 +5,24 @@ from math import pi
 import numpy as np
 import open3d as o3d
 
-from spatial_effects import SE3, Transform, TransformTree
+from spatial_effects import SE3, Transform, TransformForest
 
 
-def draw_tree(tt: TransformTree):
+def draw_tree(tf: TransformForest):
     origin = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
 
-    root_frame = tt.root_nodes[0]  # Name of root node
-    path = tt.paths[0]  # child frame => parent frame dict
+    assert tf.size == 1  # one tree
+
+    root_frame = tf.trees[0].root  # Name of root node
 
     # Compute transforms with respect to root frame
     global_transforms: dict[str, Transform] = dict()  # key on child frame
-    for child_frame, transform in tt.transforms.items():
-        t = Transform(tt.get_se3(child_frame, root_frame), child_frame, root_frame)
+    for child_frame, transform in tf.transforms.items():
+        t = Transform(tf.get_se3(child_frame, root_frame), child_frame, root_frame)
         global_transforms[child_frame] = t
 
     # Draw lines between frames
+    path = tf.trees[0].path  # child frame => parent frame dict
     lines = []
     for child_frame in path:
         parent_frame = path[child_frame]
@@ -66,9 +68,8 @@ def main():
         Transform(SE3([0.2, 0, 0], [0, 0, 0]), "r_foot", "r_ankle"),
     ]
 
-    tt = TransformTree(transforms)
-    print(tt.paths)
-    draw_tree(tt)
+    tf = TransformForest(transforms)
+    draw_tree(tf)
 
 
 if __name__ == "__main__":
