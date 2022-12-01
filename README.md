@@ -2,7 +2,7 @@
 This is a lightweight Python package for working with coordinate transforms in three dimensions. It provides the following:
  - Conversion between common spatial rotation representations
  - The `SE3` class for applying rigid translations and rotations to points and vectors
- - [TODO] `Transform` and `TransformTree` types for handling named coordinate frames and frame hierarchies
+ - `TransformTree` and `TransformForest` types for handling named coordinate frames and frame hierarchies
 
 ## Dependencies
 Numpy is the only dependency. It is installed automatically with this package.
