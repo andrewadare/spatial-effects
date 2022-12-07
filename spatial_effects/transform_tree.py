@@ -75,9 +75,14 @@ class TransformTree:
         """Create a multiline string representation similar to
         the `tree` filesystem visualization command in linux.
 
-        _lines and _prefix serve as static variables in recursion
-        and are not meant to be assigned.
+        _lines and _prefix serve as static variables and are not
+        meant to be assigned.
         """
+        # Add root node
+        if not _lines:
+            _lines = self.root + "\n"
+
+        # Add all others
         for i, child in enumerate(self.graph[node]):
             if i < len(self.graph[node]) - 1:
                 _lines += f"{_prefix}├── {child}\n"
