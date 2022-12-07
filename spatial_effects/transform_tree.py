@@ -170,7 +170,7 @@ class TransformForest:
         # Maps child frame ID => Transform
         self._transforms: dict[str, Transform] = dict()
         self._trees: list[FrameTree] = []
-        self.graph = dict()
+        self.graph: dict[str, set[str]] = dict()
         if transforms:
             self.update(transforms)
 
