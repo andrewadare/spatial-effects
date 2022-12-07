@@ -57,7 +57,7 @@ class FrameTree:
 class TransformTree:
     """Data structure for a collection of named 6 DOF coordinate frames
     linked by parent-child relationships. The `tree` and `transforms` data
-    members maintain the topological and geometrical information 
+    members maintain the topological and geometrical information
     (respectively).
     The tree can be dynamically grown using the `update` method, but an error
     will be raised if a coordinate frame is added with no link to the rest of
@@ -67,8 +67,30 @@ class TransformTree:
     def __init__(self, transforms: list[Transform] = []):
         self._transforms: dict[str, Transform] = dict()
         self._tree = FrameTree({})
+        self.graph: dict[str, set[str]] = dict()
         if transforms:
             self.update(transforms)
+
+    def render(self, node: str, _lines="", _prefix="") -> str:
+        """Create a multiline string representation similar to
+        the `tree` filesystem visualization command in linux.
+
+        _lines and _prefix serve as static variables in recursion
+        and are not meant to be assigned.
+        """
+        for i, child in enumerate(self.graph[node]):
+            if i < len(self.graph[node]) - 1:
+                _lines += f"{_prefix}├── {child}\n"
+                if child in self.graph:
+                    _lines = self.render(child, _lines, _prefix + "│   ")
+            else:
+                _lines += f"{_prefix}└── {child}\n"
+                if child in self.graph:
+                    _lines = self.render(child, _lines, _prefix + "    ")
+        return _lines
+
+    def __str__(self):
+        return self.render(self.root)
 
     def update(self, t: Union[Transform, list[Transform]]):
         if isinstance(t, Transform):
@@ -81,8 +103,8 @@ class TransformTree:
         else:
             raise ValueError(f"Unsupported type {type(t)}")
 
-        graph = map_parents_to_children(self._transforms)
-        paths_up = map_children_to_parents(graph)
+        self.graph = map_parents_to_children(self._transforms)
+        paths_up = map_children_to_parents(self.graph)
 
         if len(paths_up) > 1:
             raise ValueError(
@@ -102,6 +124,10 @@ class TransformTree:
     @property
     def tree(self):
         return self._tree
+
+    @property
+    def root(self):
+        return self._tree.root
 
     def get_se3(self, frame_a: str, frame_b: str) -> SE3:
         """Compute the SE(3) transformation from frame_a to frame_b.
@@ -139,6 +165,7 @@ class TransformForest:
         # Maps child frame ID => Transform
         self._transforms: dict[str, Transform] = dict()
         self._trees: list[FrameTree] = []
+        self.graph = dict()
         if transforms:
             self.update(transforms)
 
@@ -153,8 +180,8 @@ class TransformForest:
         else:
             raise ValueError(f"Unsupported type {type(t)}")
 
-        graph = map_parents_to_children(self._transforms)
-        paths_up = map_children_to_parents(graph)
+        self.graph = map_parents_to_children(self._transforms)
+        paths_up = map_children_to_parents(self.graph)
         self._trees = [FrameTree(p) for p in paths_up]
 
     @property
