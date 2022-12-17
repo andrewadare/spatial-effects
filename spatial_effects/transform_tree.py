@@ -210,12 +210,15 @@ class TransformForest:
                     transforms.append(self._transforms[child])
             self._trees.append(TransformTree(transforms))
 
+    def __str__(self) -> str:
+        return "\n".join([t.render(t.root) for t in self.trees])
+
     @property
-    def transforms(self):
+    def transforms(self) -> dict[str, Transform]:
         return self._transforms
 
     @property
-    def size(self):
+    def size(self) -> int:
         return len(self._trees)
 
     @property

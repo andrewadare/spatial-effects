@@ -82,6 +82,9 @@ class TransformForestTests(unittest.TestCase):
         for a, b in zip(a[different], b[different]):
             print(a, b)
 
+    def test_str(self):
+        print(self.tf)
+
     def test_forest_traversal_1(self):
         """Identity"""
         print("\ntest_forest_traversal_1")
