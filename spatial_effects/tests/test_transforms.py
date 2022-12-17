@@ -98,12 +98,12 @@ class TransformForestTests(unittest.TestCase):
     def test_forest_traversal_3(self):
         """Invalid frame name"""
         print("\ntest_forest_traversal_3")
-        self.assertRaises(ValueError, self.tf.get_se3, "bogus_frame", "origin")
+        self.assertRaises(LookupError, self.tf.get_se3, "bogus_frame", "origin")
 
     def test_forest_traversal_4(self):
         """Disconnected trees"""
         print("\ntest_forest_traversal_4")
-        self.assertRaises(ValueError, self.tf.get_se3, "disconnected_child", "l_elbow")
+        self.assertRaises(LookupError, self.tf.get_se3, "disconnected_child", "l_elbow")
 
     def test_forest_traversal_5(self):
         """Disconnected trees"""

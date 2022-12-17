@@ -136,6 +136,9 @@ class TransformTree:
     def root(self) -> str:
         return self._frame_map.root
 
+    def __contains__(self, frame: str):
+        return frame in self._frame_map
+
     def get_se3(self, frame_a: str, frame_b: str) -> SE3:
         """Compute the SE(3) transformation from frame_a to frame_b.
 
@@ -160,7 +163,13 @@ class TransformTree:
         if tree_path is None:
             raise LookupError(f"No path found for {frame_a} -> {frame_b}")
 
-        return get_se3(tree_path, self._transforms)
+        a, b = SE3(), SE3()
+        for frame in tree_path.a_up[:-1]:
+            a = self._transforms[frame].se3 * a
+        for frame in tree_path.b_up[:-1]:
+            b = self._transforms[frame].se3 * b
+
+        return b.inverse * a
 
 
 class TransformForest:
@@ -171,12 +180,14 @@ class TransformForest:
     def __init__(self, transforms: list[Transform] = []):
         # Maps child frame ID => Transform
         self._transforms: dict[str, Transform] = dict()
-        self._trees: list[FrameMap] = []
+        self._trees: list[TransformTree] = []
         self.graph: dict[str, set[str]] = dict()
         if transforms:
             self.update(transforms)
 
     def update(self, t: Union[Transform, list[Transform]]):
+
+        # Update _transforms
         if isinstance(t, Transform):
             self._transforms[t.child_frame] = t
         elif isinstance(t, list):
@@ -187,9 +198,17 @@ class TransformForest:
         else:
             raise ValueError(f"Unsupported type {type(t)}")
 
+        # Update _graph
         self.graph = map_parents_to_children(self._transforms)
-        paths_up = map_children_to_parents(self.graph)
-        self._trees = [FrameMap(p) for p in paths_up]
+
+        # Update _trees
+        self._trees = []
+        for path_up in map_children_to_parents(self.graph):
+            transforms = []
+            for child, parent in path_up.items():
+                if parent is not None:
+                    transforms.append(self._transforms[child])
+            self._trees.append(TransformTree(transforms))
 
     @property
     def transforms(self):
@@ -200,7 +219,7 @@ class TransformForest:
         return len(self._trees)
 
     @property
-    def trees(self):
+    def trees(self) -> list[TransformTree]:
         return self._trees
 
     def get_se3(self, frame_a: str, frame_b: str) -> SE3:
@@ -219,34 +238,13 @@ class TransformForest:
 
         Raises
         ======
-        ValueError if no path is found from frame_a to frame_b
+        LookupError if no path is found from frame_a to frame_b
         """
+        for tree in self._trees:
+            if frame_a in tree and frame_b in tree:
+                return tree.get_se3(frame_a, frame_b)
 
-        # Find the tree containing a and b
-        tree = None
-        for t in self._trees:
-            if frame_a in t and frame_b in t:
-                tree = t
-                break
-        if tree is None:
-            raise ValueError(f"No tree found for {frame_a}, {frame_b}")
-
-        # Find the path from a -> b
-        tree_path = tree.get_path(frame_a, frame_b)
-        if tree_path is None:
-            raise ValueError(f"No path found for {frame_a} -> {frame_b}")
-
-        return get_se3(tree_path, self._transforms)
-
-
-def get_se3(tree_path: TreePath, transforms: dict[str, Transform]):
-    """Compute the chain of transforms specified in `tree_path`."""
-    a, b = SE3(), SE3()
-    for frame in tree_path.a_up[:-1]:
-        a = transforms[frame].se3 * a
-    for frame in tree_path.b_up[:-1]:
-        b = transforms[frame].se3 * b
-    return b.inverse * a
+        raise LookupError(f"No tree found for {frame_a}, {frame_b}")
 
 
 def bfs(g: dict, root: Any):

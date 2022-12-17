@@ -22,7 +22,7 @@ def draw_tree(tf: TransformForest):
         global_transforms[child_frame] = t
 
     # Draw lines between frames
-    path = tf.trees[0].path  # child frame => parent frame dict
+    path = tf.trees[0].frame_map.path  # child frame => parent frame dict
     lines = []
     for child_frame in path:
         parent_frame = path[child_frame]
