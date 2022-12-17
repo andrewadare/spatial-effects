@@ -20,9 +20,10 @@ class TreePath:
 
 
 @dataclass
-class FrameTree:
-    """Maintains a tree of coordinate frame names and supports
-    querying the tree for paths. No geometry info here.
+class FrameMap:
+    """Maintains a data structure mapping coordinate frame names to parent
+    frame names. This forms a tree that can be queried for paths from one
+    frame to another. No geometry info here.
     """
 
     # child frames => parent frames. parent is None if child is a root node
@@ -33,7 +34,7 @@ class FrameTree:
         return self._path
 
     @property
-    def root(self):
+    def root(self) -> str:
         # By construction, the root node is always the first
         # key in the child => parent dictionary and its parent is
         # always None.
@@ -55,10 +56,11 @@ class FrameTree:
 
 
 class TransformTree:
-    """Data structure for a collection of named 6 DOF coordinate frames
-    linked by parent-child relationships. The `tree` and `transforms` data
-    members maintain the topological and geometrical information
-    (respectively).
+    """Data structure for a collection of named 6 DOF coordinate frames linked
+    by parent-child relationships. Its data members maintain the topological
+    and geometrical information required to find routes and transforms between
+    frames.
+
     The tree can be dynamically grown using the `update` method, but an error
     will be raised if a coordinate frame is added with no link to the rest of
     the tree.
@@ -66,7 +68,7 @@ class TransformTree:
 
     def __init__(self, transforms: list[Transform] = []):
         self._transforms: dict[str, Transform] = dict()
-        self._tree = FrameTree({})
+        self._frame_map = FrameMap({})
         self.graph: dict[str, set[str]] = dict()
         if transforms:
             self.update(transforms)
@@ -120,19 +122,19 @@ class TransformTree:
             raise ValueError(f"Empty TransformTree")
 
         (p,) = paths_up
-        self._tree = FrameTree(p)
+        self._frame_map = FrameMap(p)
 
     @property
     def transforms(self):
         return self._transforms
 
     @property
-    def tree(self):
-        return self._tree
+    def frame_map(self) -> FrameMap:
+        return self._frame_map
 
     @property
-    def root(self):
-        return self._tree.root
+    def root(self) -> str:
+        return self._frame_map.root
 
     def get_se3(self, frame_a: str, frame_b: str) -> SE3:
         """Compute the SE(3) transformation from frame_a to frame_b.
@@ -154,9 +156,9 @@ class TransformTree:
         """
 
         # Find the path from a -> b
-        tree_path = self._tree.get_path(frame_a, frame_b)
+        tree_path = self._frame_map.get_path(frame_a, frame_b)
         if tree_path is None:
-            raise ValueError(f"No path found for {frame_a} -> {frame_b}")
+            raise LookupError(f"No path found for {frame_a} -> {frame_b}")
 
         return get_se3(tree_path, self._transforms)
 
@@ -169,7 +171,7 @@ class TransformForest:
     def __init__(self, transforms: list[Transform] = []):
         # Maps child frame ID => Transform
         self._transforms: dict[str, Transform] = dict()
-        self._trees: list[FrameTree] = []
+        self._trees: list[FrameMap] = []
         self.graph: dict[str, set[str]] = dict()
         if transforms:
             self.update(transforms)
@@ -187,7 +189,7 @@ class TransformForest:
 
         self.graph = map_parents_to_children(self._transforms)
         paths_up = map_children_to_parents(self.graph)
-        self._trees = [FrameTree(p) for p in paths_up]
+        self._trees = [FrameMap(p) for p in paths_up]
 
     @property
     def transforms(self):

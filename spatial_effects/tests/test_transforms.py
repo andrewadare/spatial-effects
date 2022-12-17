@@ -50,7 +50,7 @@ class TransformTreeTests(unittest.TestCase):
     def test_tree_traversal_3(self):
         """Invalid frame name"""
         print("\ntest_tree_traversal_3")
-        self.assertRaises(ValueError, self.tt.get_se3, "bogus_frame", "origin")
+        self.assertRaises(LookupError, self.tt.get_se3, "bogus_frame", "origin")
 
     def test_orphan_update(self):
         """Adding an orphaned coordinate frame"""
