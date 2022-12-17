@@ -83,6 +83,7 @@ class TransformForestTests(unittest.TestCase):
             print(a, b)
 
     def test_str(self):
+        print("\ntest_forest_str_method")
         print(self.tf)
 
     def test_forest_traversal_1(self):
