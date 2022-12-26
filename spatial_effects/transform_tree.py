@@ -4,6 +4,9 @@ from typing import Any, Optional, Union
 
 from .se3 import SE3
 
+# Type alias for a pair of upward (child -> parent) paths in a tree.
+PathPair = tuple[list[str], list[str]]
+
 
 @dataclass
 class Transform:
@@ -11,12 +14,6 @@ class Transform:
     child_frame: str
     parent_frame: str
     timestamp: Any = None
-
-
-@dataclass
-class TreePath:
-    a_up: list[str]
-    b_up: list[str]
 
 
 @dataclass
@@ -43,7 +40,7 @@ class FrameMap:
     def __contains__(self, k):
         return k in self._path
 
-    def get_path(self, frame_a: str, frame_b: str) -> Union[TreePath, None]:
+    def get_path(self, frame_a: str, frame_b: str) -> Union[PathPair, None]:
         if frame_a not in self._path or frame_b not in self._path:
             return None
 
@@ -52,7 +49,7 @@ class FrameMap:
         a_up: list[str] = traverse_up(self._path, frame_a)
         b_up: list[str] = traverse_up(self._path, frame_b)
 
-        return TreePath(a_up, b_up)
+        return (a_up, b_up)
 
 
 class TransformTree:
@@ -159,14 +156,15 @@ class TransformTree:
         """
 
         # Find the path from a -> b
-        tree_path = self._frame_map.get_path(frame_a, frame_b)
-        if tree_path is None:
+        path_pair = self._frame_map.get_path(frame_a, frame_b)
+        if path_pair is None:
             raise LookupError(f"No path found for {frame_a} -> {frame_b}")
 
+        a_up, b_up = path_pair
         a, b = SE3(), SE3()
-        for frame in tree_path.a_up[:-1]:
+        for frame in a_up[:-1]:
             a = self._transforms[frame].se3 * a
-        for frame in tree_path.b_up[:-1]:
+        for frame in b_up[:-1]:
             b = self._transforms[frame].se3 * b
 
         return b.inverse * a
