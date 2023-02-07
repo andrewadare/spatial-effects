@@ -1,6 +1,35 @@
+from enum import Enum, auto
 from math import pi
 
 import numpy as np
+
+
+class Basis(Enum):
+    """Enumeration constants for interpreting a coordinate triplet (x, y, z) in
+    terms of egocentric or cardinal directions. The names refer to (x, y); their
+    cross product defines the +z direction according to the right-hand rule.
+    """
+
+    FWD_LEFT = auto()  # z up (ROS REP 103)
+    EAST_NORTH = auto()  # z up
+    FWD_RIGHT = auto()  # z down (aeronautics)
+    NORTH_EAST = auto()  # z down
+    RIGHT_DOWN = auto()  # z fwd (camera/optical)
+    RIGHT_UP = auto()  # z back (OpenGL)
+
+    def to(self, other: "Basis"):
+        """Returns a rotation matrix used to reinterpret coordinates."""
+        x, y, z = np.eye(3)
+        bases = {
+            Basis.FWD_LEFT: (x, y, z),
+            Basis.EAST_NORTH: (x, y, z),
+            Basis.FWD_RIGHT: (x, -y, -z),
+            Basis.NORTH_EAST: (x, -y, -z),
+            Basis.RIGHT_DOWN: (z, -x, -y),
+            Basis.RIGHT_UP: (-z, -x, y),
+        }
+
+        return np.array(bases[self]).T @ np.array(bases[other])
 
 
 def reshape_nx3(x):

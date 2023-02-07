@@ -58,3 +58,23 @@ class RotationTests(unittest.TestCase):
 
         # TODO: test that the polar distribution is proportional to sin(theta).
         # thetas = np.arccos(vecs[:, 2] / lengths)
+
+    def test_basis_change_in_so3(self):
+        print("\ntest_basis_change_in_so3")
+
+        for a in sfx.Basis:
+            for b in sfx.Basis:
+                R = a.to(b)
+                self.check_eq(R.shape, (3, 3))
+                self.check_eq(R.T @ R, np.eye(3))
+                self.check_eq(np.linalg.det(R), 1)
+
+    def test_basis_change_inverse(self):
+        print("\ntest_basis_change_inverse")
+
+        for a in sfx.Basis:
+            for b in sfx.Basis:
+                R = a.to(b)
+                Rinv = b.to(a)
+                self.check_eq(Rinv @ R, np.eye(3))
+                self.check_eq(R @ Rinv, np.eye(3))
