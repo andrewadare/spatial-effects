@@ -137,17 +137,33 @@ class SE3:
     def t(self):
         return self.matrix[0:3, 3]
 
+    @t.setter
+    def t(self, t_):
+        self.matrix[0:3, 3] = t_
+
     @property
     def R(self):
         return self.matrix[0:3, 0:3]
+
+    @R.setter
+    def R(self, R_):
+        self.matrix[0:3, 0:3] = R_
 
     @property
     def r(self):
         return so3_to_vector(self.R)
 
+    @r.setter
+    def r(self, r_):
+        self.matrix[0:3, 0:3] = vector_to_so3(r_)
+
     @property
     def q(self):
         return so3_to_quaternion(self.R)
+
+    @q.setter
+    def q(self, q_):
+        self.matrix[0:3, 0:3] = quaternion_to_so3(q_)
 
     @property
     def vec(self):
