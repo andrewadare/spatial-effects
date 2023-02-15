@@ -22,7 +22,7 @@ class SE3:
     Example
     -------
     x = [1, 0, 0]              # Define a point/translation
-    r = [0, 0, pi/2]           # Define an orientation/rotation
+    r = [0, 0, pi/2]           # Rodrigues rotation vector
     T1 = SE3()                 # Create identity transformation
     T2 = SE3(x, r)             # Lists, tuples, or ndarrays ok here
     callable(T1)               # True
