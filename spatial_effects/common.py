@@ -29,7 +29,8 @@ class Basis(Enum):
             Basis.RIGHT_UP: (-z, -x, y),
         }
 
-        return np.array(bases[self]).T @ np.array(bases[other])
+        # Note transposed construction from row vectors
+        return np.array(bases[self]) @ np.array(bases[other]).T
 
 
 def reshape_nx3(x):
