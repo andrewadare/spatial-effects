@@ -66,7 +66,7 @@ class SE3:
 
             assert trans.size == 3, f"Translation must be a 3-vector: {trans.size}"
 
-            self.matrix[0:3, 3] = trans if trans.ndim == 1 else trans.reshape([3, 1])
+            self.matrix[0:3, 3] = trans.ravel()
 
             if rot.size == 3:
                 self.matrix[0:3, 0:3] = vector_to_so3(rot)

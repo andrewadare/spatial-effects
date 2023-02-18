@@ -80,3 +80,9 @@ class SE3Tests(unittest.TestCase):
         print("\ntest_se3_inverse")
         a = SE3(randn(3), sfx.rrand())
         self.check_eq((a.inverse * a).matrix, np.eye(4), atol=1e-6)
+
+    def test_se3_input_shape(self):
+        print("\ntest_se3_input_shape")
+        t = uniform(size=(3,))
+        r = sfx.rrand()
+        self.assertTrue(SE3(t, r) == SE3(t[:, None], r[:, None]))
