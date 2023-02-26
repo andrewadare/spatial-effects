@@ -19,20 +19,20 @@ class DistanceTests(unittest.TestCase):
         print("\ntest_quaternion_angular_distance")
         phi = pi / 4
         q1 = sfx.qnull()
-        q2 = sfx.vector_to_quaternion([0, 0, phi])
+        q2 = sfx.rvec_to_quaternion([0, 0, phi])
         self.check_eq(phi, sfx.angle_between_quaternions(q1, q2))
 
     def test_so3_angular_distance(self):
         print("\ntest_so3_angular_distance")
         phi = pi / 4
         R1 = np.eye(3)
-        R2 = sfx.vector_to_so3([0, 0, phi])
+        R2 = sfx.rvec_to_so3([0, 0, phi])
         self.check_eq(phi, sfx.so3_angular_distance(R1, R2))
 
     def test_so3_chordal_distance(self):
         print("\ntest_so3_chordal_distance")
         phi = pi / 4
         R1 = np.eye(3)
-        R2 = sfx.vector_to_so3([0, 0, phi])
+        R2 = sfx.rvec_to_so3([0, 0, phi])
         d = sfx.so3_chordal_distance(R1, R2)
         self.check_eq(d, np.linalg.norm(R1 - R2))
