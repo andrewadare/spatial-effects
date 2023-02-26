@@ -91,6 +91,16 @@ def in_mpi_pi(phi):
     return wrap(phi, -pi, pi)
 
 
+def in_so3(M: np.ndarray):
+    return all(
+        [
+            M.shape == (3, 3),
+            np.allclose(np.linalg.det(M), 1.0),
+            np.allclose(M.T @ M, np.eye(3)),
+        ]
+    )
+
+
 def cross_product_matrix(a, b, c):
     """Return a 3x3 skew-symmetric cross-product matrix from the vector
     components a, b, and c."""

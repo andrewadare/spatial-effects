@@ -1,6 +1,7 @@
 """Functions for unit Hamilton quaternions.
 For rotating a point using quaternions, see rotate.py.
 """
+from typing import Union
 from math import sin, cos, pi
 
 import numpy as np
@@ -386,59 +387,49 @@ def q_vec_norm(q):
         return np.linalg.norm(q[:, 1:4], axis=1)[:, np.newaxis]  # Nx1
 
 
-def quaternion_mean(qs, weights=None):
-    """Compute the weighted mean over unit quaternions as described in
-    "Averaging Quaternions" by F.L. Markley et al., Journal of Guidance,
-    Control, and Dynamics 30, no. 4 (2007): 1193-1197.
+def lerp(p, q, alpha):
+    """Weighted linear interpolation between quaternions:
+
+    (1 - alpha)p + alpha*q
 
     Parameters
     ----------
-    qs : ndarray - shape (N, 4)
-        Array of unit quaternions
-    weights : ndarray - shape (N,) or (1, N)
-        Optional weight factors for each quaternion
-
-    Returns
-    -------
-    Normalized orientation quaternion as ndarray with shape (4,).
+    p, q : ndarray - shape (4,)
+    alpha : float
+        weight factor in 0 <= alpha <= 1
     """
-    if weights is not None:
-        w = np.atleast_2d(weights).T  # w should be Nx1
-        Q = (w * qs).T
-    else:
-        Q = qs.T
+    if not 0 <= alpha <= 1.0:
+        raise ValueError("0 <= alpha <= 1 required. Received {}".format(alpha))
 
-    vals, vecs = np.linalg.eig(Q @ Q.T)  # Not sorted!
-    vals = np.real_if_close(vals)
-
-    return np.real_if_close(vecs[:, np.argmax(vals)])
+    q_int = (1 - alpha) * p + alpha * q  # interpolated
+    return q_int / qnorm(q_int)
 
 
-def quaternion_distance(a, b):
-    """Returns distances between arrays of normalized quaternions.
+def slerp(p, q, alpha):
+    """Weighted spherical linear interpolation between quaternions:
 
-    Accounts for 2-fold degeneracy (q and -q perform the same rotation).
+    sin((1 - alpha)*a)/sin(a)*p + sin(alpha*a)/sin(a)*q
+
+    where a is the angle between p and q.
 
     Parameters
     ----------
-    a, b : ndarray - shape (4,) or (N, 4)
-        Quaternions in N rows
-
-    Returns
-    -------
-    scalar or ndarray with shape (N,)
-        Distance(s) between a and b.
+    p, q : ndarray - shape (4,)
+    alpha : float
+        weight factor in 0 <= alpha <= 1
     """
-    a, b = np.atleast_2d(a), np.atleast_2d(b)
-    d2 = np.minimum(np.sum((a - b) ** 2, axis=1), np.sum((a + b) ** 2, axis=1))
-    d = np.sqrt(d2)
-    if d.shape == (1,):
-        return d.item()
-    else:
-        return d
+    if not 0 <= alpha <= 1.0:
+        raise ValueError("0 <= alpha <= 1 required. Received {}".format(alpha))
+
+    a = 0.5 * angle_between_quaternions(p, q)
+
+    if a < 1e-12:
+        return p
+    q_int = sin((1 - alpha) * a) / sin(a) * p + sin(alpha * a) / sin(a) * q
+    return q_int / qnorm(q_int)
 
 
-def euclidean_angle(p, q):
+def angle_between_quaternions(p: np.ndarray, q: np.ndarray) -> Union[float, np.ndarray]:
     """Compute unsigned angle(s) `a` between quaternions in Euclidean 4-space, handling
     SO(3) double cover degeneracy. In other words, ensure the angle between each pair is
     in 0 <= a <= pi. Symmetric under p, q swap.
@@ -482,45 +473,3 @@ def euclidean_angle(p, q):
         a = a.item()
 
     return a
-
-
-def lerp(p, q, alpha):
-    """Weighted linear interpolation between quaternions:
-
-    (1 - alpha)p + alpha*q
-
-    Parameters
-    ----------
-    p, q : ndarray - shape (4,)
-    alpha : float
-        weight factor in 0 <= alpha <= 1
-    """
-    if not 0 <= alpha <= 1.0:
-        raise ValueError("0 <= alpha <= 1 required. Received {}".format(alpha))
-
-    q_int = (1 - alpha) * p + alpha * q  # interpolated
-    return q_int / qnorm(q_int)
-
-
-def slerp(p, q, alpha):
-    """Weighted spherical linear interpolation between quaternions:
-
-    sin((1 - alpha)*a)/sin(a)*p + sin(alpha*a)/sin(a)*q
-
-    where a is the angle between p and q.
-
-    Parameters
-    ----------
-    p, q : ndarray - shape (4,)
-    alpha : float
-        weight factor in 0 <= alpha <= 1
-    """
-    if not 0 <= alpha <= 1.0:
-        raise ValueError("0 <= alpha <= 1 required. Received {}".format(alpha))
-
-    a = 0.5 * euclidean_angle(p, q)
-
-    if a < 1e-12:
-        return p
-    q_int = sin((1 - alpha) * a) / sin(a) * p + sin(alpha * a) / sin(a) * q
-    return q_int / qnorm(q_int)
