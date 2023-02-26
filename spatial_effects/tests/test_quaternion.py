@@ -147,7 +147,7 @@ class QuaternionTests(unittest.TestCase):
         """Show that qplus and qdiff work as mutual inverses."""
         print("\ntest_qplus_qminus_consistency")
         q, p = sfx.qrand(2)
-        w = sfx.quaternion_to_vector(p)
+        w = sfx.quaternion_to_rvec(p)
 
         # check (q ⊞ w) ⊟ q == w
         self.check_eq(sfx.qdiff(sfx.qplus(q, w), q), w)
@@ -159,7 +159,7 @@ class QuaternionTests(unittest.TestCase):
         print("\ntest_vectorized_qplus_qminus_consistency")
         q = sfx.qrand(5)
         p = sfx.qrand(5)
-        w = sfx.quaternion_to_vector(p)
+        w = sfx.quaternion_to_rvec(p)
 
         # check (q ⊞ w) ⊟ q == w
         self.check_eq(sfx.qdiff(sfx.qplus(q, w), q), w)

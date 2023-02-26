@@ -4,8 +4,8 @@ from .conversions import (
     hc,
     ic,
     quaternion_to_so3,
-    vector_to_so3,
-    so3_to_vector,
+    rvec_to_so3,
+    so3_to_rvec,
     so3_to_quaternion,
 )
 
@@ -69,7 +69,7 @@ class SE3:
             self.matrix[0:3, 3] = trans.ravel()
 
             if rot.size == 3:
-                self.matrix[0:3, 0:3] = vector_to_so3(rot)
+                self.matrix[0:3, 0:3] = rvec_to_so3(rot)
             elif rot.size == 4:
                 self.matrix[0:3, 0:3] = quaternion_to_so3(rot)
             elif rot.shape == (3, 3):
@@ -151,11 +151,11 @@ class SE3:
 
     @property
     def r(self):
-        return so3_to_vector(self.R)
+        return so3_to_rvec(self.R)
 
     @r.setter
     def r(self, r_):
-        self.matrix[0:3, 0:3] = vector_to_so3(r_)
+        self.matrix[0:3, 0:3] = rvec_to_so3(r_)
 
     @property
     def q(self):
@@ -167,4 +167,4 @@ class SE3:
 
     @property
     def vec(self):
-        return np.hstack([self.t, so3_to_vector(self.R)])
+        return np.hstack([self.t, so3_to_rvec(self.R)])

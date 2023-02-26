@@ -3,7 +3,7 @@ from typing import Sequence
 import numpy as np
 
 from .common import in_so3
-from .conversions import so3_to_vector
+from .conversions import so3_to_rvec
 
 __all__ = (
     "so3_angular_distance",
@@ -19,7 +19,7 @@ def so3_angular_distance(R1: np.ndarray, R2: np.ndarray) -> float:
     """
     assert in_so3(R1)
     assert in_so3(R2)
-    r = so3_to_vector(R1.T @ R2)
+    r = so3_to_rvec(R1.T @ R2)
     return np.linalg.norm(r)
 
 

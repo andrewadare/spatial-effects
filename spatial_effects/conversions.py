@@ -127,7 +127,7 @@ def so3_to_quaternion(R):
     return 0.5 / np.sqrt(t) * np.array(q)
 
 
-def vector_to_quaternion(v):
+def rvec_to_quaternion(v):
     """Convert a rotation vector to a unit quaternion.
 
     Parameters
@@ -151,7 +151,7 @@ def vector_to_quaternion(v):
     return expq(0.5 * v)
 
 
-def quaternion_to_vector(q):
+def quaternion_to_rvec(q):
     """Convert a unit quaternion to a rotation vector.
 
     Parameters
@@ -230,7 +230,7 @@ def quaternion_to_ypr(q):
     return np.array([rz, ry, rx]).T.squeeze()
 
 
-def vector_to_so3(r: np.ndarray) -> np.ndarray:
+def rvec_to_so3(r: np.ndarray) -> np.ndarray:
     """Get rotation matrix from an axis-angle vector whose norm encodes rotation.
 
     Parameters
@@ -256,7 +256,7 @@ def vector_to_so3(r: np.ndarray) -> np.ndarray:
     return R
 
 
-def so3_to_vector(R: np.ndarray) -> np.ndarray:
+def so3_to_rvec(R: np.ndarray) -> np.ndarray:
     """Get an axis-angle vector from a rotation matrix.
 
     Parameters
@@ -401,8 +401,8 @@ def rodrigues(vector_or_matrix):
     vector_or_matrix = np.asarray(vector_or_matrix)
 
     if vector_or_matrix.size == 3:
-        return vector_to_so3(vector_or_matrix)
+        return rvec_to_so3(vector_or_matrix)
     elif vector_or_matrix.shape == (3, 3):
-        return so3_to_vector(vector_or_matrix)
+        return so3_to_rvec(vector_or_matrix)
     else:
         raise ValueError("Invalid input shape: {}".format(vector_or_matrix.shape))
