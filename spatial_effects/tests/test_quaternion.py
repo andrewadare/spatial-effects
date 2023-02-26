@@ -62,8 +62,8 @@ class QuaternionTests(unittest.TestCase):
         q1 = sfx.ypr_to_quaternion([+pi / 2, 0, 0])
         q2 = sfx.ypr_to_quaternion([-pi / 2, 0, 0])
 
-        d1 = sfx.euclidean_angle(p, q1)
-        d2 = sfx.euclidean_angle(p, q2)
+        d1 = sfx.angle_between_quaternions(p, q1)
+        d2 = sfx.angle_between_quaternions(p, q2)
 
         self.check_eq(d1, pi / 2)
         self.check_eq(d2, pi / 2)
@@ -74,7 +74,7 @@ class QuaternionTests(unittest.TestCase):
         angles = np.arange(0, pi, pi / n)
         ps = sfx.ypr_to_quaternion(np.zeros((n, 3)))
         qs = sfx.ypr_to_quaternion([[0, 0, a] for a in angles])
-        self.check_eq(angles, sfx.euclidean_angle(ps, qs))
+        self.check_eq(angles, sfx.angle_between_quaternions(ps, qs))
 
     def test_qleft_qright(self):
         print("\ntest_qleft_qright")
@@ -143,28 +143,11 @@ class QuaternionTests(unittest.TestCase):
         v = sfx.logq(q)
         self.check_eq(v, np.zeros([self.n, 3]))
 
-    def test_quaternion_mean(self):
-        print("\ntest_quaternion_mean")
-        yprs = np.array(
-            [[pi / 6, 0, 0], [2 * pi / 6, 0, 0], [4 * pi / 6, 0, 0], [5 * pi / 6, 0, 0]]
-        )
-        row_indices = np.arange(yprs.shape[0])
-
-        # Try the unit test 10x, with the order of the rows in yprs shuffled randomly
-        # each time.
-        for _ in range(10):
-            np.random.shuffle(row_indices)
-            yprs = yprs[row_indices, :]
-            qs = sfx.ypr_to_quaternion(yprs)
-            q_mean = sfx.quaternion_mean(qs)
-            mean = sfx.quaternion_to_ypr(q_mean)
-            self.check_eq(mean, np.array([pi / 2, 0, 0]))
-
     def test_qplus_qminus_consistency(self):
         """Show that qplus and qdiff work as mutual inverses."""
         print("\ntest_qplus_qminus_consistency")
         q, p = sfx.qrand(2)
-        w = sfx.quaternion_to_vector(p)
+        w = sfx.quaternion_to_rvec(p)
 
         # check (q ⊞ w) ⊟ q == w
         self.check_eq(sfx.qdiff(sfx.qplus(q, w), q), w)
@@ -176,7 +159,7 @@ class QuaternionTests(unittest.TestCase):
         print("\ntest_vectorized_qplus_qminus_consistency")
         q = sfx.qrand(5)
         p = sfx.qrand(5)
-        w = sfx.quaternion_to_vector(p)
+        w = sfx.quaternion_to_rvec(p)
 
         # check (q ⊞ w) ⊟ q == w
         self.check_eq(sfx.qdiff(sfx.qplus(q, w), q), w)

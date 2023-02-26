@@ -24,7 +24,7 @@ class RotationTests(unittest.TestCase):
         print("\ntest_rotate_axis_angle")
 
         q = sfx.qrand()
-        r = sfx.quaternion_to_vector(q)
+        r = sfx.quaternion_to_rvec(q)
         v = np.random.random((100, 3))
 
         self.check_eq(sfx.qrotate(v, q), sfx.rotate_axis_angle(v, r))

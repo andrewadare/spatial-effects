@@ -49,7 +49,7 @@ class SE3Tests(unittest.TestCase):
         b = SE3(randn(3), sfx.qrand())
 
         vec = np.zeros(6)
-        r = sfx.quaternion_to_vector(sfx.qnull())
+        r = sfx.quaternion_to_rvec(sfx.qnull())
         vec[:3] = uniform(size=(3,))
         vec[3:] = r
         self._test_ops(a, b, vec)
@@ -72,7 +72,7 @@ class SE3Tests(unittest.TestCase):
 
     def test_se3_r_property(self):
         print("\ntest_se3_r_property")
-        r = sfx.quaternion_to_vector(sfx.qrand())
+        r = sfx.quaternion_to_rvec(sfx.qrand())
         a = SE3(randn(3), r)
         self.check_eq(r, a.r)
 

@@ -1,6 +1,6 @@
-"""Functions for unit Hamilton quaternions.
-For rotating a point using quaternions, see rotate.py.
+"""Functions for unit Hamilton quaternions
 """
+from typing import Sequence, Optional, Union
 from math import sin, cos, pi
 
 import numpy as np
@@ -25,6 +25,71 @@ def normalize(q):
         return q / norms[:, np.newaxis]
     else:
         raise ValueError(f"Invalid shape: {q.shape}")
+
+
+def _vector_quaternion(v):
+    """Return quaternion(s) from 3-vector(s) v by prepending a zero or a column
+    of zeros. Vector quaternions have a scalar component of zero and are used
+    in rotations.
+
+    Parameters
+    ----------
+    v : ndarray - shape (3,) or (N, 3)
+
+    Returns
+    -------
+    ndarray - shape (4,) or (N, 4)
+    """
+    v2 = np.atleast_2d(v)
+    nrows, ncols = v2.shape
+    assert ncols == 3, "v should be a 3-vector or array of 3-vectors."
+    vq = np.hstack([np.zeros([nrows, 1]), v2])
+    if v.ndim == 1:
+        return vq.squeeze()
+    else:
+        return vq
+
+
+def qrotate(x, q):
+    """Rotate x by q: x_rot = q*p*inv(q) where p is a unit quaternion from x. If
+    x is a unit quaternion, then p = x.
+
+    x can be a:
+        - 3-vector (shape (3,))
+        - array of N 3-vectors (N, 3)
+        - unit quaternion (4,)
+        - array of N unit quaternions (N, 4)
+    and q must be a unit quaternion (shape (4,)) or array of unit quaternions
+    (shape (N, 4)).
+
+    Parameters
+    ----------
+    x : ndarray
+    q : ndarray
+
+    Returns
+    -------
+    ndarray
+        rotated x
+    """
+    x = np.asarray(x)
+
+    # Validate that q.shape is (4,) or (N, 4).
+    if (q.ndim == 1 and q.shape[0] != 4) or (q.ndim == 2 and q.shape[1] != 4):
+        raise ValueError(f"Invalid quaternion dimensions: {q.shape}")
+
+    if (x.ndim == 1 and x.shape[0] == 3) or (x.ndim == 2 and x.shape[1] == 3):
+        # We are rotating a vector or vectors
+        p = _vector_quaternion(x)  # prepend column of zeros
+        x4 = np.atleast_2d(qmult(q, qmult(p, qinv(q))))
+        return x4[:, 1:].squeeze()
+    elif (x.ndim == 1 and x.shape[0] == 4) or (x.ndim == 2 and x.shape[1] == 4):
+        # We are rotating a unit quaternion
+        p = x
+        x4 = np.atleast_2d(qmult(q, qmult(p, qinv(q))))
+        return x4.squeeze()
+    else:
+        raise ValueError(f"Invalid array shape(s) x {x.shape}, q {q.shape}")
 
 
 def qinv(q):
@@ -386,59 +451,49 @@ def q_vec_norm(q):
         return np.linalg.norm(q[:, 1:4], axis=1)[:, np.newaxis]  # Nx1
 
 
-def quaternion_mean(qs, weights=None):
-    """Compute the weighted mean over unit quaternions as described in
-    "Averaging Quaternions" by F.L. Markley et al., Journal of Guidance,
-    Control, and Dynamics 30, no. 4 (2007): 1193-1197.
+def lerp(p, q, alpha):
+    """Weighted linear interpolation between quaternions:
+
+    (1 - alpha)p + alpha*q
 
     Parameters
     ----------
-    qs : ndarray - shape (N, 4)
-        Array of unit quaternions
-    weights : ndarray - shape (N,) or (1, N)
-        Optional weight factors for each quaternion
-
-    Returns
-    -------
-    Normalized orientation quaternion as ndarray with shape (4,).
+    p, q : ndarray - shape (4,)
+    alpha : float
+        weight factor in 0 <= alpha <= 1
     """
-    if weights is not None:
-        w = np.atleast_2d(weights).T  # w should be Nx1
-        Q = (w * qs).T
-    else:
-        Q = qs.T
+    if not 0 <= alpha <= 1.0:
+        raise ValueError("0 <= alpha <= 1 required. Received {}".format(alpha))
 
-    vals, vecs = np.linalg.eig(Q @ Q.T)  # Not sorted!
-    vals = np.real_if_close(vals)
-
-    return np.real_if_close(vecs[:, np.argmax(vals)])
+    q_int = (1 - alpha) * p + alpha * q  # interpolated
+    return q_int / qnorm(q_int)
 
 
-def quaternion_distance(a, b):
-    """Returns distances between arrays of normalized quaternions.
+def slerp(p, q, alpha):
+    """Weighted spherical linear interpolation between quaternions:
 
-    Accounts for 2-fold degeneracy (q and -q perform the same rotation).
+    sin((1 - alpha)*a)/sin(a)*p + sin(alpha*a)/sin(a)*q
+
+    where a is the angle between p and q.
 
     Parameters
     ----------
-    a, b : ndarray - shape (4,) or (N, 4)
-        Quaternions in N rows
-
-    Returns
-    -------
-    scalar or ndarray with shape (N,)
-        Distance(s) between a and b.
+    p, q : ndarray - shape (4,)
+    alpha : float
+        weight factor in 0 <= alpha <= 1
     """
-    a, b = np.atleast_2d(a), np.atleast_2d(b)
-    d2 = np.minimum(np.sum((a - b) ** 2, axis=1), np.sum((a + b) ** 2, axis=1))
-    d = np.sqrt(d2)
-    if d.shape == (1,):
-        return d.item()
-    else:
-        return d
+    if not 0 <= alpha <= 1.0:
+        raise ValueError("0 <= alpha <= 1 required. Received {}".format(alpha))
+
+    a = 0.5 * angle_between_quaternions(p, q)
+
+    if a < 1e-12:
+        return p
+    q_int = sin((1 - alpha) * a) / sin(a) * p + sin(alpha * a) / sin(a) * q
+    return q_int / qnorm(q_int)
 
 
-def euclidean_angle(p, q):
+def angle_between_quaternions(p: np.ndarray, q: np.ndarray) -> Union[float, np.ndarray]:
     """Compute unsigned angle(s) `a` between quaternions in Euclidean 4-space, handling
     SO(3) double cover degeneracy. In other words, ensure the angle between each pair is
     in 0 <= a <= pi. Symmetric under p, q swap.
@@ -484,43 +539,58 @@ def euclidean_angle(p, q):
     return a
 
 
-def lerp(p, q, alpha):
-    """Weighted linear interpolation between quaternions:
+def quaternion_distance(a: np.ndarray, b: np.ndarray) -> Union[float, np.ndarray]:
+    """Returns distances between arrays of normalized quaternions.
 
-    (1 - alpha)p + alpha*q
-
-    Parameters
-    ----------
-    p, q : ndarray - shape (4,)
-    alpha : float
-        weight factor in 0 <= alpha <= 1
-    """
-    if not 0 <= alpha <= 1.0:
-        raise ValueError("0 <= alpha <= 1 required. Received {}".format(alpha))
-
-    q_int = (1 - alpha) * p + alpha * q  # interpolated
-    return q_int / qnorm(q_int)
-
-
-def slerp(p, q, alpha):
-    """Weighted spherical linear interpolation between quaternions:
-
-    sin((1 - alpha)*a)/sin(a)*p + sin(alpha*a)/sin(a)*q
-
-    where a is the angle between p and q.
+    Accounts for 2-fold degeneracy (q and -q perform the same rotation).
 
     Parameters
     ----------
-    p, q : ndarray - shape (4,)
-    alpha : float
-        weight factor in 0 <= alpha <= 1
+    a, b : ndarray - shape (4,) or (N, 4)
+        Quaternions in N rows
+
+    Returns
+    -------
+    scalar or ndarray with shape (N,)
+        Distance(s) between a and b.
     """
-    if not 0 <= alpha <= 1.0:
-        raise ValueError("0 <= alpha <= 1 required. Received {}".format(alpha))
+    a, b = np.atleast_2d(a), np.atleast_2d(b)
+    d2 = np.minimum(np.sum((a - b) ** 2, axis=1), np.sum((a + b) ** 2, axis=1))
+    d = np.sqrt(d2)
+    if d.shape == (1,):
+        return d.item()
+    else:
+        return d
 
-    a = 0.5 * euclidean_angle(p, q)
 
-    if a < 1e-12:
-        return p
-    q_int = sin((1 - alpha) * a) / sin(a) * p + sin(alpha * a) / sin(a) * q
-    return q_int / qnorm(q_int)
+def quaternion_mean(
+    qs: np.ndarray, weights: Optional[Sequence[float]] = None
+) -> np.ndarray:
+    """Compute the weighted mean over unit quaternions.
+
+    Parameters
+    ----------
+    qs : ndarray - shape (N, 4)
+        Array of unit quaternions
+    weights : ndarray - shape (N,) or (1, N)
+        Optional weight factors for each quaternion
+
+    Returns
+    -------
+    Normalized orientation quaternion as ndarray with shape (4,).
+
+    Reference
+    ---------
+    "Averaging Quaternions" by F.L. Markley et al., Journal of Guidance,
+    Control, and Dynamics 30, no. 4 (2007): 1193-1197.
+    """
+    if weights is not None:
+        w = np.atleast_2d(weights).T  # w should be Nx1
+        Q = (w * qs).T
+    else:
+        Q = qs.T
+
+    vals, vecs = np.linalg.eig(Q @ Q.T)  # Not sorted!
+    vals = np.real_if_close(vals)
+
+    return np.real_if_close(vecs[:, np.argmax(vals)])

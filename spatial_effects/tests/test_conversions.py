@@ -29,13 +29,13 @@ class ConversionTests(unittest.TestCase):
         self.check_eq(r, r_also)
 
         # Check R against r -> q -> R
-        Rq = sfx.quaternion_to_so3(sfx.vector_to_quaternion(r))
+        Rq = sfx.quaternion_to_so3(sfx.rvec_to_quaternion(r))
         self.check_eq(R, Rq)
 
     def test_rodrigues(self):
         print("\ntest_rodrigues")
         for q in sfx.qrand(100):
-            r = sfx.quaternion_to_vector(q)
+            r = sfx.quaternion_to_rvec(q)
             self._test_rodrigues(r)
 
         # When R is I, r is zeros.
