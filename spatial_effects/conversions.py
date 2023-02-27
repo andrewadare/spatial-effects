@@ -7,6 +7,50 @@ import numpy as np
 from .common import cross_product_matrix
 from .quaternion import qleft, qright, normalize, q_angle, q_axis, expq
 
+__all__ = (
+    "hc",
+    "ic",
+    "quaternion_to_so3",
+    "so3_to_quaternion",
+    "rvec_to_quaternion",
+    "quaternion_to_rvec",
+    "ypr_to_quaternion",
+    "quaternion_to_ypr",
+    "rvec_to_so3",
+    "so3_to_rvec",
+    "ypr_to_so3",
+    "so3_to_ypr",
+    "rodrigues",
+)
+
+
+def vector_to_quaternion(v):
+    print(
+        "vector_to_quaternion is deprecated in v0.2. Please use rvec_to_quaternion instead."
+    )
+    return rvec_to_quaternion(v)
+
+
+def quaternion_to_vector(q):
+    print(
+        "quaternion_to_vector is deprecated in v0.2. Please use quaternion_to_rvec instead."
+    )
+    return quaternion_to_rvec(q)
+
+
+def vector_to_so3(v):
+    print(
+        "vector_to_so3 is deprecated in v0.2. Please use rvec_to_so3 or rodrigues instead."
+    )
+    return rvec_to_so3(v)
+
+
+def so3_to_vector(R):
+    print(
+        "so3_to_vector is deprecated in v0.2. Please use so3_to_rvec or rodrigues instead."
+    )
+    return so3_to_rvec(R)
+
 
 def hc(x: np.ndarray) -> np.ndarray:
     """Convert an array of points (as row vectors) from inhomogeneous to
