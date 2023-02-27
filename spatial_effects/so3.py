@@ -37,19 +37,20 @@ def so3_chordal_l2_mean(rotation_matrices: Sequence[np.ndarray]) -> np.ndarray:
     """Returns the mean of a set of rotation matrices as the matrix
     with minimum chordal L2 distance to all matrices in the set.
 
-    Reference
-    ---------
+    References
+    ----------
     Richard Hartley, Jochen Trumpf, Yuchao Dai, and Hongdong Li. 2013. Rotation averaging.
     International journal of computer vision 103, 3 (2013), 267-305.
+
+    Luca Carlone, Roberto Tron, Kostas Daniilidis and Frank Dellaert. 2015. Initialization
+    Techniques for 3D SLAM: a Survey on Rotation Estimation and its Use in Pose Graph
+    Optimization. 2015 IEEE International Conference on Robotics and Automation (ICRA)},
+    4597-4604.
     """
     for i, R in enumerate(rotation_matrices):
         if not in_so3(R):
             print(f"Element {i} not in SO(3):\n{R}")
 
     U, s, VT = np.linalg.svd(sum(rotation_matrices))
-    UVT = U @ VT
 
-    if np.linalg.det(UVT) >= 0.0:
-        return UVT
-
-    return U @ np.diag([1, 1, -1.0]) @ VT
+    return U @ np.diag([1, 1, np.linalg.det(U @ VT)]) @ VT
