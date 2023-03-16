@@ -49,12 +49,16 @@ class RotationTests(unittest.TestCase):
         # a chi squared test comparing observed counts/bin (phi_hist) vs.
         # expected counts/bin (mu).
         num_bins = 10
-        vecs /= np.linalg.norm(vecs, axis=1)[:, np.newaxis]
+        norms = np.linalg.norm(vecs, axis=1)[:, np.newaxis]
+        vecs /= norms
         phis = np.arctan2(vecs[:, 1], vecs[:, 0])
         phi_hist, phi_bin_edges = np.histogram(phis, bins=num_bins, range=[-pi, pi])
         mu = num_samples / num_bins
         chi_squared = np.sum(1 / mu * (phi_hist - mu) ** 2)
         self.assertLess(chi_squared / num_bins, 3.0)
+
+        self.assertTrue(np.all(norms >= 0.0))
+        self.assertTrue(np.all(norms <= pi))
 
         # TODO: test that the polar distribution is proportional to sin(theta).
         # thetas = np.arccos(vecs[:, 2] / lengths)

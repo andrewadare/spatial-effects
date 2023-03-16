@@ -86,3 +86,9 @@ class SE3Tests(unittest.TestCase):
         t = uniform(size=(3,))
         r = sfx.rrand()
         self.assertTrue(SE3(t, r) == SE3(t[:, None], r[:, None]))
+
+    def test_bad_rotation_matrix_input(self):
+        print("\ntest_bad_rotation_matrix_input")
+        R = sfx.rvec_to_so3(sfx.rrand()) + 1e-8
+        self.assertFalse(sfx.in_so3(R))
+        self.assertRaises(ValueError, sfx.SE3, [0, 0, 0], R)

@@ -1,4 +1,5 @@
 import unittest
+from math import pi
 
 import numpy as np
 
@@ -21,6 +22,36 @@ class ConversionTests(unittest.TestCase):
         for a, b in zip(a[different], b[different]):
             print(a, b)
 
+    def test_so3_to_rvec_norm(self):
+        print("\ntest_so3_to_rvec_norm")
+        yprs = np.random.uniform(low=0.0, high=2 * pi, size=(100, 3)) - pi
+        for ypr in yprs:
+            R = sfx.ypr_to_so3(ypr)
+            r = sfx.so3_to_rvec(R)
+            theta = np.linalg.norm(r)
+            self.assertGreaterEqual(theta, 0)
+            self.assertLessEqual(theta, pi)
+
+    def test_rvec_so3_roundtrip(self):
+        print("\ntest_rvec_so3_roundtrip")
+        # when norm(r) = pi, r == -r.
+        for r in sfx.rrand(100):
+            self.check_eq(r, sfx.so3_to_rvec(sfx.rvec_to_so3(r)))
+
+    def test_rvec_pi_norm(self):
+        print("\ntest_rvec_pi_norm")
+        r = np.array([0, 0, pi])
+        r_also = sfx.so3_to_rvec(sfx.rvec_to_so3(r))
+        self.check_eq(r, r_also)
+
+        r = np.array([0, pi, 0])
+        r_also = sfx.so3_to_rvec(sfx.rvec_to_so3(r))
+        self.check_eq(r, r_also)
+
+        r = np.array([pi, 0, 0])
+        r_also = sfx.so3_to_rvec(sfx.rvec_to_so3(r))
+        self.check_eq(r, r_also)
+
     def _test_rodrigues(self, r):
         R = sfx.rodrigues(r)
         r_also = sfx.rodrigues(R)
@@ -42,6 +73,7 @@ class ConversionTests(unittest.TestCase):
         self._test_rodrigues(np.zeros((3,)))
         self._test_rodrigues(np.zeros((3, 1)))
         self._test_rodrigues(np.zeros((1, 3)))
+        self._test_rodrigues([0, 0, pi])
 
     def test_q_to_ypr_roundtrip_single(self):
         print("\ntest_q_to_ypr_roundtrip_single")
@@ -123,3 +155,8 @@ class ConversionTests(unittest.TestCase):
             ]
         )
         self.check_eq(R, R_also)
+
+
+if __name__ == "__main__":
+    np.set_printoptions(precision=3, suppress=True)
+    unittest.main()

@@ -6,6 +6,7 @@ import numpy as np
 
 from .common import cross_product_matrix
 from .quaternion import qleft, qright, normalize, q_angle, q_axis, expq
+from .axis_angle import keep_north
 
 __all__ = (
     "hc",
@@ -312,9 +313,14 @@ def so3_to_rvec(R: np.ndarray) -> np.ndarray:
     -------
     r : ndarray - shape (3,)
         Rodrigues vector
+
+    Reference
+    ---------
+    "Vector Representation of Rotations" by Carlo Tomasi
+    https://courses.cs.duke.edu/fall13/compsci527/notes/rodrigues.pdf
     """
 
-    # Handle special case of symmetric R, such as R = I
+    # Handle special case of symmetric R
     if np.allclose(R - R.T, np.zeros((3, 3))):
         c = (np.trace(R) - 1) / 2  # this is cos(theta)
         if c == 1:
@@ -322,8 +328,10 @@ def so3_to_rvec(R: np.ndarray) -> np.ndarray:
             return np.zeros(3)
         if c == -1:
             # theta is odd*pi
-            v = R[:, 0]
-            return np.pi * v / np.linalg.norm(v)
+            # One way to find a nonzero column
+            col = np.argmax(np.sum(R + np.eye(3), axis=0))
+            v = R[:, col]
+            return keep_north(np.pi * v / np.linalg.norm(v))
 
     a, b, c = R[0]
     d, e, f = R[1]
@@ -337,6 +345,7 @@ def so3_to_rvec(R: np.ndarray) -> np.ndarray:
     u_norm = np.linalg.norm(u)
     if isclose(u_norm, 0.0):
         return np.zeros(3)
+
     return theta * u / u_norm
 
 

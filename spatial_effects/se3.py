@@ -8,6 +8,7 @@ from .conversions import (
     so3_to_rvec,
     so3_to_quaternion,
 )
+from .common import in_so3
 
 
 class SE3:
@@ -73,6 +74,8 @@ class SE3:
             elif rot.size == 4:
                 self.matrix[0:3, 0:3] = quaternion_to_so3(rot)
             elif rot.shape == (3, 3):
+                if not in_so3(rot):
+                    raise ValueError(f"Invalid rotation matrix:\n{rot}")
                 self.matrix[0:3, 0:3] = rot
             else:
                 raise ValueError(

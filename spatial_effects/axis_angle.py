@@ -7,6 +7,7 @@ from .common import reshape_nx3
 __all__ = (
     "rotate_axis_angle",
     "rrand",
+    "keep_north",
 )
 
 
@@ -57,9 +58,33 @@ def rotate_axis_angle(v, r):
     return v_rotated
 
 
+def keep_north(r: np.ndarray):
+    """Restrict the angle of a Rodrigues vector to have a positive
+    rotation in [0,pi] and a direction in the north hemisphere.
+    The sign of r is flipped when norm(r) = pi and certain component
+    conditions hold.
+
+    References
+    ----------
+    https://courses.cs.duke.edu/fall13/compsci527/notes/rodrigues.pdf
+    """
+    assert r.size == 3 and r.ndim == 1
+    theta = np.linalg.norm(r)
+    eps = np.finfo(float).eps
+    if abs(theta - pi) < eps:
+        rx, ry, rz = r
+        if rx < 0:
+            return -r
+        if abs(rx) < eps and ry < 0:
+            return -r
+        if abs(rx) < eps and abs(ry) < eps and rz < 0:
+            return -r
+    return r
+
+
 def rrand(n: int = 1) -> np.ndarray:
-    """Generate `n` random rotation vectors on the unit sphere whose norm
-    is a rotation angle in [0, 2pi).
+    """Sample `n` random rotation vectors from the upper half of a ball with
+    radius pi.
 
     Parameters
     ----------
@@ -70,8 +95,11 @@ def rrand(n: int = 1) -> np.ndarray:
     array containing n random axis-angle vectors normalized to random rotation angles
     """
 
-    # Get random rotation axes by sampling from an isotropic Gaussian
+    # Get random rotation axes by sampling from an isotropic Gaussian.
+    # Constrain directions to north hemisphere.
     vecs = np.random.randn(n, 3)
+    south = vecs[:, 2] < 0
+    vecs[south, 2] = -vecs[south, 2]
     norms = np.linalg.norm(vecs, axis=1)
 
     # Resample any points that are too close to zero for safe normalization
@@ -81,8 +109,8 @@ def rrand(n: int = 1) -> np.ndarray:
         norms[shorties] = np.linalg.norm(vecs[shorties], axis=1)
         shorties = np.isclose(norms, 0.0)
 
-    # Normalize to a random value in [0, 2pi)
-    vecs = 2 * pi * np.random.uniform(size=[n, 1]) * vecs / norms[:, np.newaxis]
+    # Normalize to a random value in [0, pi)
+    vecs = pi * np.random.uniform(size=[n, 1]) * vecs / norms[:, np.newaxis]
 
     if n == 1:
         vecs = vecs.ravel()
