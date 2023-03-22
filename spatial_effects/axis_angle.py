@@ -7,7 +7,7 @@ from .common import reshape_nx3
 __all__ = (
     "rotate_axis_angle",
     "rrand",
-    "keep_north",
+    "unique_rvec",
 )
 
 
@@ -58,28 +58,34 @@ def rotate_axis_angle(v, r):
     return v_rotated
 
 
-def keep_north(r: np.ndarray):
-    """Restrict the angle of a Rodrigues vector to have a positive
-    rotation in [0,pi] and a direction in the north hemisphere.
-    The sign of r is flipped when norm(r) = pi and certain component
-    conditions hold.
+def unique_rvec(r: np.ndarray):
+    """Flip sign of Rodrigues vector(s) r if necessary to maintain a
+    unique rotation representation. r can be a single vector with shape
+    (3,) or an array of N vectors with shape (N, 3).
 
     References
     ----------
     https://courses.cs.duke.edu/fall13/compsci527/notes/rodrigues.pdf
     """
-    assert r.size == 3 and r.ndim == 1
-    theta = np.linalg.norm(r)
+    # assert r.size == 3 and r.ndim == 1
+
+    r = np.atleast_2d(r)
+    assert r.shape[1] == 3
+
+    theta = np.linalg.norm(r, axis=1)
     eps = np.finfo(float).eps
-    if abs(theta - pi) < eps:
-        rx, ry, rz = r
-        if rx < 0:
-            return -r
-        if abs(rx) < eps and ry < 0:
-            return -r
-        if abs(rx) < eps and abs(ry) < eps and rz < 0:
-            return -r
-    return r
+    for i in np.argwhere(theta == pi).ravel():
+        rx, ry, rz = r[i]
+        if np.any(
+            [
+                rx < 0,
+                abs(rx) < eps and ry < 0,
+                abs(rx) < eps and abs(ry) < eps and rz < 0,
+            ]
+        ):
+            r[i] = -r[i]
+
+    return r.squeeze()
 
 
 def rrand(n: int = 1) -> np.ndarray:
