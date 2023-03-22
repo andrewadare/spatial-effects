@@ -1,12 +1,12 @@
 """Coordinate conversions and transformations
 """
-from math import isclose
+from math import isclose, pi
 
 import numpy as np
 
 from .common import cross_product_matrix
 from .quaternion import qleft, qright, normalize, q_angle, q_axis, expq
-from .axis_angle import keep_north
+from .axis_angle import unique_rvec
 
 __all__ = (
     "hc",
@@ -217,7 +217,8 @@ def quaternion_to_rvec(q):
         assert q.size == 4 or q.shape[1] == 4, f"Invalid input: {q}"
     else:
         raise ValueError(f"Input rank must be 1 or 2: {q.ndim}")
-    return q_angle(q) * q_axis(q)
+
+    return unique_rvec(q_angle(q) * q_axis(q))
 
 
 def ypr_to_quaternion(ypr):
@@ -321,17 +322,16 @@ def so3_to_rvec(R: np.ndarray) -> np.ndarray:
     """
 
     # Handle special case of symmetric R
-    if np.allclose(R - R.T, np.zeros((3, 3))):
+    A = (R - R.T) / 2
+    if np.linalg.norm([A[2, 1], A[0, 2], A[1, 0]]) == 0:
         c = (np.trace(R) - 1) / 2  # this is cos(theta)
         if c == 1:
-            # theta is zero or even*pi
             return np.zeros(3)
         if c == -1:
-            # theta is odd*pi
             # One way to find a nonzero column
             col = np.argmax(np.sum(R + np.eye(3), axis=0))
             v = R[:, col]
-            return keep_north(np.pi * v / np.linalg.norm(v))
+            return unique_rvec(np.pi * v / np.linalg.norm(v))
 
     a, b, c = R[0]
     d, e, f = R[1]
