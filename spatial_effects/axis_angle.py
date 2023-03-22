@@ -67,8 +67,6 @@ def unique_rvec(r: np.ndarray):
     ----------
     https://courses.cs.duke.edu/fall13/compsci527/notes/rodrigues.pdf
     """
-    # assert r.size == 3 and r.ndim == 1
-
     r = np.atleast_2d(r)
     assert r.shape[1] == 3
 
