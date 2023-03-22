@@ -322,8 +322,7 @@ def q_axis(q):
 def q_angle(q):
     validate(q)
     if q.ndim == 1:
-        angle = 2.0 * np.arctan2(q_vec_norm(q), q[0])
-        return in_mpi_pi(angle)
+        return in_mpi_pi(2.0 * np.arctan2(q_vec_norm(q), q[0]))
     else:
         return in_mpi_pi(2.0 * np.arctan2(q_vec_norm(q), q[:, :1]))
 
