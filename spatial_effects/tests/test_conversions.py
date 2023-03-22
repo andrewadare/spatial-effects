@@ -15,7 +15,10 @@ class ConversionTests(unittest.TestCase):
 
     def check_eq(self, a, b, atol=1e-8):
         """Test for approximate equality."""
-        self.assertTrue(np.allclose(a, b, atol=atol))
+        cond = np.allclose(a, b, atol=atol)
+        if not cond:
+            print(f"{a} != {b}")
+        self.assertTrue(cond)
 
     def print_different(self, a, b):
         different = ~np.all(np.isclose(a, b), axis=1)
@@ -38,6 +41,14 @@ class ConversionTests(unittest.TestCase):
         for r in sfx.rrand(100):
             self.check_eq(r, sfx.so3_to_rvec(sfx.rvec_to_so3(r)))
 
+    def test_q_vs_so3_intermediary(self):
+        print("\ntest_q_vs_so3_intermediary")
+        ypr = [pi, 0, pi / 2]
+        R = sfx.ypr_to_so3(ypr)
+        r_via_q = sfx.quaternion_to_rvec(sfx.ypr_to_quaternion(ypr))
+        r_via_R = sfx.so3_to_rvec(R)
+        self.check_eq(r_via_q, r_via_R)
+
     def test_rvec_pi_norm(self):
         print("\ntest_rvec_pi_norm")
         r = np.array([0, 0, pi])
@@ -55,24 +66,30 @@ class ConversionTests(unittest.TestCase):
     def _test_rodrigues(self, r):
         R = sfx.rodrigues(r)
         r_also = sfx.rodrigues(R)
-
-        # Roundtrip check
         self.check_eq(r, r_also)
+        self._test_rodrigues_q(r)
 
+    def _test_rodrigues_q(self, r):
         # Check R against r -> q -> R
+        R = sfx.rodrigues(r)
         Rq = sfx.quaternion_to_so3(sfx.rvec_to_quaternion(r))
         self.check_eq(R, Rq)
 
-    def test_rodrigues(self):
-        print("\ntest_rodrigues")
+    def test_rodrigues_random(self):
+        print("\ntest_rodrigues_random")
         for q in sfx.qrand(100):
             r = sfx.quaternion_to_rvec(q)
             self._test_rodrigues(r)
 
+    def test_rodrigues_zeros(self):
+        print("\ntest_rodrigues_zeros")
         # When R is I, r is zeros.
         self._test_rodrigues(np.zeros((3,)))
         self._test_rodrigues(np.zeros((3, 1)))
         self._test_rodrigues(np.zeros((1, 3)))
+
+    def test_rodrigues_pi_norm(self):
+        print("\ntest_rodrigues_pi_norm")
         self._test_rodrigues([0, 0, pi])
 
     def test_q_to_ypr_roundtrip_single(self):
