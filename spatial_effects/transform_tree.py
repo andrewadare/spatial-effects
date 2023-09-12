@@ -1,5 +1,6 @@
+import numpy as np
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Any, Optional, Union
 
 from .se3 import SE3
@@ -14,6 +15,25 @@ class Transform:
     child_frame: str
     parent_frame: str
     timestamp: Any = None
+
+    def to_dict(self) -> dict:
+        se3_list = self.se3.matrix.tolist()
+
+        return {
+            "se3": se3_list,
+            "parent_frame": self.parent_frame,
+            "child_frame": self.child_frame,
+            "timestamp": self.timestamp,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Transform":
+        se3 = SE3(np.array(data["se3"]))
+        parent_frame = data["parent_frame"]
+        child_frame = data["child_frame"]
+        timestamp = data["timestamp"]
+
+        return cls(se3, child_frame, parent_frame, timestamp)
 
 
 @dataclass
@@ -168,6 +188,15 @@ class TransformTree:
             b = self._transforms[frame].se3 * b
 
         return b.inverse * a
+
+    def to_list(self) -> list[dict]:
+        return [t.to_dict() for t in self._transforms.values()]
+
+    @classmethod
+    def from_dict(cls, transforms: list[dict]) -> "TransformTree":
+        transforms_: list[Transform] = [Transform.from_dict(t) for t in transforms]
+
+        return cls(transforms_)
 
 
 class TransformForest:

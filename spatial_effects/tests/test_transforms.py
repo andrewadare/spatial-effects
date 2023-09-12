@@ -27,6 +27,19 @@ skeleton = [
 ]
 
 
+class TransformTests(unittest.TestCase):
+    def setUp(self) -> None:
+        np.set_printoptions(precision=5, suppress=True)
+        self.transform = Transform(SE3([0.2, 0, 0], [0, 0, 0]), "r_foot", "r_ankle")
+
+    def test_transform_to_dict(self):
+        print("\ntest_transform_to_dict")
+        actual_serialized_transform = self.transform.to_dict()
+        expected_serialized_transform = Transform.from_dict(actual_serialized_transform).to_dict()
+
+        self.assertEqual(actual_serialized_transform, expected_serialized_transform)
+
+
 class TransformTreeTests(unittest.TestCase):
     def setUp(self):
         """Runs before every test function."""
