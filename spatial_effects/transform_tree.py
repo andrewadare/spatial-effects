@@ -190,10 +190,10 @@ class TransformTree:
         return b.inverse * a
 
     def to_list(self) -> list[dict]:
-        return [t.to_dict() for t in self._transforms.values()]
+        return [t.to_dict() for t in self.transforms.values()]
 
     @classmethod
-    def from_dict(cls, transforms: list[dict]) -> "TransformTree":
+    def from_list(cls, transforms: list[dict]) -> "TransformTree":
         transforms_: list[Transform] = [Transform.from_dict(t) for t in transforms]
 
         return cls(transforms_)
@@ -275,6 +275,15 @@ class TransformForest:
                 return tree.get_se3(frame_a, frame_b)
 
         raise LookupError(f"No tree found for {frame_a}, {frame_b}")
+
+    def to_list(self) -> list[dict]:
+        return [t.to_dict() for t in self.transforms.values()]
+
+    @classmethod
+    def from_list(cls, transforms: list[dict]) -> "TransformForest":
+        transforms_: list[Transform] = [Transform.from_dict(t) for t in transforms]
+
+        return cls(transforms_)
 
 
 def bfs(g: dict, root: Any):
