@@ -37,7 +37,7 @@ class TransformTests(unittest.TestCase):
         actual_serialized_transform = self.transform.to_dict()
         expected_serialized_transform = Transform.from_dict(actual_serialized_transform).to_dict()
 
-        self.assertEqual(actual_serialized_transform, expected_serialized_transform)
+        self.assertDictEqual(actual_serialized_transform, expected_serialized_transform)
 
 
 class TransformTreeTests(unittest.TestCase):
@@ -46,6 +46,22 @@ class TransformTreeTests(unittest.TestCase):
         np.set_printoptions(precision=5, suppress=True)
 
         self.tt = TransformTree(skeleton)
+
+    def test_transform_tree_serialization(self):
+        print("\ntest_transform_tree_serialization")
+        actual_serialized_transform_tree = self.tt.to_list()
+        new_tt = TransformTree.from_list(actual_serialized_transform_tree)
+
+        with self.subTest("Test equality of serialized transform tree"):
+            expected_serialized_transform_tree = new_tt.to_list()
+            self.assertListEqual(
+                actual_serialized_transform_tree, expected_serialized_transform_tree
+            )
+
+        with self.subTest("Test rendered transform tree match"):
+            root_node = self.tt.root
+            expected_transform_tree_str = new_tt.render(root_node)
+            self.assertEqual(self.tt.render(root_node), expected_transform_tree_str)
 
     def test_tree_traversal_1(self):
         """Identity"""
@@ -94,6 +110,21 @@ class TransformForestTests(unittest.TestCase):
         different = ~np.all(np.isclose(a, b), axis=1)
         for a, b in zip(a[different], b[different]):
             print(a, b)
+
+    def test_forest_serialization(self):
+        print("\ntest_forest_serialization")
+        actual_serialized_transform_forest = self.tf.to_list()
+        new_tf = TransformForest.from_list(actual_serialized_transform_forest)
+
+        with self.subTest("Test equality of serialized transform forest"):
+            expected_serialized_transform_forest = new_tf.to_list()
+            self.assertListEqual(
+                actual_serialized_transform_forest, expected_serialized_transform_forest
+            )
+
+        with self.subTest("Test rendered transform forest match"):
+            expected_transform_forest_str = str(new_tf)
+            self.assertEqual(str(self.tf), expected_transform_forest_str)
 
     def test_str(self):
         print("\ntest_forest_str_method")
