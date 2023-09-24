@@ -92,3 +92,10 @@ class SE3Tests(unittest.TestCase):
         R = sfx.rvec_to_so3(sfx.rrand()) + 1e-8
         self.assertFalse(sfx.in_so3(R))
         self.assertRaises(ValueError, sfx.SE3, [0, 0, 0], R)
+
+    def test_se3_copy_constructor(self):
+        print("\ntest_se3_copy_constructor")
+        a = SE3(randn(3), sfx.rrand())
+        b = SE3(a)
+        self.check_eq(a.matrix, b.matrix)
+        self.assertIsNot(a, b)

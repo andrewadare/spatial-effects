@@ -59,7 +59,7 @@ class SE3:
             if isinstance(args[0], np.ndarray) and args[0].shape == (4, 4):
                 self.matrix = args[0]
             elif isinstance(args[0], SE3):
-                self.matrix[:] = args.matrix
+                self.matrix[:] = args[0].matrix
             else:
                 raise ValueError("Positional arg must be a 4x4 array or SE(3) object")
         elif len(args) == 2:
