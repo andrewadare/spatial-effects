@@ -4,12 +4,6 @@ import numpy as np
 
 from .common import reshape_nx3
 
-__all__ = (
-    "rotate_axis_angle",
-    "rrand",
-    "unique_rvec",
-)
-
 
 def rotate_axis_angle(v, r):
     """Rotate a Euclidean 3-vector or array of 3-vectors v by an axis-angle vector r

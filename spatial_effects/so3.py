@@ -5,12 +5,6 @@ import numpy as np
 from .common import in_so3
 from .conversions import so3_to_rvec
 
-__all__ = (
-    "so3_angular_distance",
-    "so3_chordal_distance",
-    "so3_chordal_l2_mean",
-)
-
 
 def so3_angular_distance(R1: np.ndarray, R2: np.ndarray) -> float:
     """Angular or geodesic distance between two SO(3) rotations.

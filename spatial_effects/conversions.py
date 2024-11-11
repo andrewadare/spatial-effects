@@ -1,28 +1,13 @@
 """Coordinate conversions and transformations
 """
+
 from math import isclose, pi
 
 import numpy as np
 
-from .common import cross_product_matrix
+from .common import cross_product_matrix, in_so2, in_so3, skew
 from .quaternion import qleft, qright, normalize, q_angle, q_axis, expq
 from .axis_angle import unique_rvec
-
-__all__ = (
-    "hc",
-    "ic",
-    "quaternion_to_so3",
-    "so3_to_quaternion",
-    "rvec_to_quaternion",
-    "quaternion_to_rvec",
-    "ypr_to_quaternion",
-    "quaternion_to_ypr",
-    "rvec_to_so3",
-    "so3_to_rvec",
-    "ypr_to_so3",
-    "so3_to_ypr",
-    "rodrigues",
-)
 
 
 def vector_to_quaternion(v):
@@ -459,3 +444,41 @@ def rodrigues(vector_or_matrix):
         return so3_to_rvec(vector_or_matrix)
     else:
         raise ValueError("Invalid input shape: {}".format(vector_or_matrix.shape))
+
+
+def _logm_diagonalizable(A):
+
+    if A.ndim != 2:
+        raise ValueError(f"Array must be rank 2: {A}")
+
+    m, n = A.shape
+    if m != n:
+        raise ValueError(f"A must be square: {A}")
+
+    eigvals, V = np.linalg.eig(A)
+    if not np.all(eigvals > 0):
+        raise ValueError(f"Matrix must be positive definite: {A}")
+
+    if not np.all(np.isreal(eigvals)):
+        raise ValueError(f"A is not diagonalizable.")
+
+    # Did I get this backwards? Should it be V A VT?
+    D = V.T @ A @ V
+    print(D)
+    print(np.diag(D))
+    print(np.log(np.diag(D)))
+
+    logD = np.diag(np.log(np.diag(D)))
+
+    return V @ logD @ V.T
+
+
+def logm(A: np.ndarray) -> np.ndarray:
+    "logm currently supports only SO(2), SO(3), and diagonalizable A."
+    "Try scipy.linalg.logm for a more general implementation."
+    if in_so2(A):
+        return skew(np.arccos(A[0, 0]))
+    elif in_so3(A):
+        return skew(so3_to_rvec(A))
+    else:
+        return _logm_diagonalizable(A)
