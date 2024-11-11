@@ -1,5 +1,6 @@
 from enum import Enum, auto
 from math import pi
+from typing import Union
 
 import numpy as np
 
@@ -91,6 +92,16 @@ def in_mpi_pi(phi):
     return wrap(phi, -pi, pi)
 
 
+def in_so2(M: np.ndarray):
+    return all(
+        [
+            M.shape == (2, 2),
+            np.allclose(np.linalg.det(M), 1.0),
+            np.allclose(M.T @ M, np.eye(2)),
+        ]
+    )
+
+
 def in_so3(M: np.ndarray):
     return all(
         [
@@ -112,3 +123,18 @@ def cross_product_matrix(a, b, c):
     c = c.item() if isinstance(c, np.ndarray) else c
 
     return np.array([[0.0, -c, b], [c, 0.0, -a], [-b, a, 0.0]])
+
+
+def skew(v_: Union[np.ndarray, float]) -> np.ndarray:
+    """Returns skew-symmetric cross product matrix S from a 3-vector or scalar v.
+    If v is 1-dimensional, S will be 2x2; if v is 3-dimensional, S is 3x3.
+    """
+
+    v = np.asarray(v_).ravel()
+
+    if v.size == 3:
+        return np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0.0]])
+    elif v.size == 1:
+        return np.array([[0, -v[0]], [v[0], 0.0]])
+    else:
+        raise ValueError(f"v must have 1 or 3 components: {v}")
