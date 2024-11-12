@@ -1,8 +1,6 @@
 import numpy as np
 
 from .conversions import (
-    hc,
-    ic,
     quaternion_to_so3,
     rvec_to_so3,
     so3_to_rvec,
@@ -92,10 +90,7 @@ class SE3:
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
         """Apply this SE(3) transformation to x"""
-        result = ic(self.matrix @ hc(x))
-        if np.asarray(x).ndim == 1:
-            return result.ravel()
-        return result
+        return self.R @ x + self.t
 
     def __eq__(self, other):
         if not isinstance(other, SE3):

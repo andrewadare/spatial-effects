@@ -462,12 +462,7 @@ def _logm_diagonalizable(A):
     if not np.all(np.isreal(eigvals)):
         raise ValueError(f"A is not diagonalizable.")
 
-    # Did I get this backwards? Should it be V A VT?
     D = V.T @ A @ V
-    print(D)
-    print(np.diag(D))
-    print(np.log(np.diag(D)))
-
     logD = np.diag(np.log(np.diag(D)))
 
     return V @ logD @ V.T
