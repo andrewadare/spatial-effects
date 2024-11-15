@@ -47,7 +47,8 @@ class SE3:
         - a translation 3-vector and a 3x3 rotation matrix
         - a translation 3-vector and a Hamilton unit quaternion (w,x,y,z)
         """
-        self.matrix = np.eye(4)
+        self._R = np.eye(3)
+        self._t = np.zeros(3)
         self.timestamp = timestamp
 
         if not args:
@@ -55,9 +56,12 @@ class SE3:
 
         if len(args) == 1:
             if isinstance(args[0], np.ndarray) and args[0].shape == (4, 4):
-                self.matrix = args[0]
+                T = args[0]
+                self._R = T[:3, :3]
+                self._t = T[:3, 3]
             elif isinstance(args[0], SE3):
-                self.matrix[:] = args[0].matrix
+                self._R = args[0].R
+                self._t = args[0].t
             else:
                 raise ValueError("Positional arg must be a 4x4 array or SE(3) object")
         elif len(args) == 2:
@@ -65,16 +69,16 @@ class SE3:
 
             assert trans.size == 3, f"Translation must be a 3-vector: {trans.size}"
 
-            self.matrix[0:3, 3] = trans.ravel()
+            self._t = trans.ravel()
 
             if rot.size == 3:
-                self.matrix[0:3, 0:3] = rvec_to_so3(rot)
+                self._R = rvec_to_so3(rot)
             elif rot.size == 4:
-                self.matrix[0:3, 0:3] = quaternion_to_so3(rot)
+                self._R = quaternion_to_so3(rot)
             elif rot.shape == (3, 3):
                 if not in_so3(rot):
                     raise ValueError(f"Invalid rotation matrix:\n{rot}")
-                self.matrix[0:3, 0:3] = rot
+                self._R = rot
             else:
                 raise ValueError(
                     f"Cannot identify rotation by array dimensions: {rot.shape}"
@@ -85,7 +89,7 @@ class SE3:
                 f"Received {len(args)}"
             )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.matrix)
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
@@ -132,20 +136,28 @@ class SE3:
         return SE3(-self.R.T @ self.t, self.R.T)
 
     @property
+    def matrix(self) -> np.ndarray:
+        """Returns 4x4 homogeneous transform matrix"""
+        M = np.eye(4)
+        M[:3, :3] = self._R
+        M[:3, 3] = self._t
+        return M
+
+    @property
     def t(self):
-        return self.matrix[0:3, 3]
+        return self._t
 
     @t.setter
     def t(self, t_):
-        self.matrix[0:3, 3] = t_
+        self._t = t_
 
     @property
     def R(self):
-        return self.matrix[0:3, 0:3]
+        return self._R
 
     @R.setter
     def R(self, R_):
-        self.matrix[0:3, 0:3] = R_
+        self._R = R_
 
     @property
     def r(self):
@@ -153,7 +165,7 @@ class SE3:
 
     @r.setter
     def r(self, r_):
-        self.matrix[0:3, 0:3] = rvec_to_so3(r_)
+        self._R = rvec_to_so3(r_)
 
     @property
     def q(self):
@@ -161,8 +173,8 @@ class SE3:
 
     @q.setter
     def q(self, q_):
-        self.matrix[0:3, 0:3] = quaternion_to_so3(q_)
+        self._R = quaternion_to_so3(q_)
 
     @property
     def vec(self):
-        return np.hstack([self.t, so3_to_rvec(self.R)])
+        return np.hstack([self._t, so3_to_rvec(self._R)])
