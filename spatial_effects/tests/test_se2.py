@@ -41,8 +41,6 @@ class SE2Tests(unittest.TestCase):
 
     def _test_operator_identity_2(self, a, b, vec):
         # Check that (a ⊞ vec) ⊟ a == vec
-        print(vec)
-        print((a + vec) - a)
         self.check_eq((a + vec) - a, vec)
 
     def test_operator_identities(self):
