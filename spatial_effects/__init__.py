@@ -1,4 +1,4 @@
-__version__ = "0.4"
+__version__ = "0.4.0"
 
 from .axis_angle import *
 from .common import *
