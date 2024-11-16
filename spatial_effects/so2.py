@@ -2,7 +2,7 @@ from math import sin, cos, atan2
 
 import numpy as np
 
-from common import in_so2
+from .common import in_so2
 
 
 def so2_matrix(angle: float):
