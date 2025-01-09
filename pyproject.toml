@@ -1,0 +1,27 @@
+[project]
+name = "spatial-effects"
+version = "0.4.0"
+authors = [
+    {name="Andrew Adare", email="andrewadare@gmail.com"},
+]
+description = "Spatial geometry for vision and robotics"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: MIT",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "numpy",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/andrewadare/spatial-effects"
+
+[build-system]
+requires = [
+    "setuptools>=64.0",  # PEP 660 first implemented
+]
+build-backend = "setuptools.build_meta"
