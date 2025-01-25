@@ -72,20 +72,20 @@ class SE3Tests(unittest.TestCase):
 
     def test_se3_r_property(self):
         print("\ntest_se3_r_property")
-        r = sfx.quaternion_to_rvec(sfx.qrand())
-        a = SE3(randn(3), r)
+        r = sfx.rrand()
+        a = SE3([*randn(3), *r])
         self.check_eq(r, a.r)
 
     def test_se3_inverse(self):
         print("\ntest_se3_inverse")
-        a = SE3(randn(3), sfx.rrand())
+        a = SE3(randn(3), sfx.qrand())
         self.check_eq((a.inverse * a).matrix, np.eye(4), atol=1e-6)
 
     def test_se3_input_shape(self):
         print("\ntest_se3_input_shape")
         t = uniform(size=(3,))
-        r = sfx.rrand()
-        self.assertTrue(SE3(t, r) == SE3(t[:, None], r[:, None]))
+        q = sfx.qrand()
+        self.assertTrue(SE3(t, q) == SE3(t[:, None], q[:, None]))
 
     def test_bad_rotation_matrix_input(self):
         print("\ntest_bad_rotation_matrix_input")
@@ -95,7 +95,13 @@ class SE3Tests(unittest.TestCase):
 
     def test_se3_copy_constructor(self):
         print("\ntest_se3_copy_constructor")
-        a = SE3(randn(3), sfx.rrand())
+        a = SE3([*randn(3), *sfx.rrand()])
         b = SE3(a)
         self.check_eq(a.matrix, b.matrix)
         self.assertIsNot(a, b)
+
+    def test_se3_exp_log(self):
+        print("\ntest_se3_exp_log")
+        T1 = SE3(randn(3), sfx.qrand())
+        T2 = SE3(T1.vec)
+        self.check_eq(T1.matrix, T2.matrix)

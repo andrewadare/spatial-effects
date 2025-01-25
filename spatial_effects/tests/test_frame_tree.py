@@ -13,23 +13,23 @@ class FrameTreeTests(unittest.TestCase):
 
         # Humanoid transform tree
         self.tree = FrameTree()
-        self.tree.add(SE3([1, 2, 3], [0, 0, 0]), "body", "origin")
-        self.tree.add(SE3([0, 0, 0.5], [0, 0, -pi / 3]), "head", "body")
-        self.tree.add(SE3([0, 1, 0], [0, 0, 0]), "l_shoulder", "body")
-        self.tree.add(SE3([0, -1, 0], [0, 0, 0]), "r_shoulder", "body")
-        self.tree.add(SE3([0, 0, -0.7], [0, -pi / 6, 0]), "l_elbow", "l_shoulder")
-        self.tree.add(SE3([0, 0, -0.7], [0, -pi / 3, 0]), "r_elbow", "r_shoulder")
-        self.tree.add(SE3([0, 0, -0.6], [0, 0, 0]), "l_wrist", "l_elbow")
-        self.tree.add(SE3([0, 0, -0.6], [0, 0, 0]), "r_wrist", "r_elbow")
-        self.tree.add(SE3([0, 0, -1], [0, 0, pi / 8]), "waist", "body")
-        self.tree.add(SE3([0, 0.4, 0], [0, -pi / 4, 0]), "l_hip", "waist")
-        self.tree.add(SE3([0, -0.4, 0], [0, 0, 0]), "r_hip", "waist")
-        self.tree.add(SE3([0, 0, -1.2], [0, pi / 2, 0]), "l_knee", "l_hip")
-        self.tree.add(SE3([0, 0, -1.2], [0, 0, 0]), "r_knee", "r_hip")
-        self.tree.add(SE3([0, 0, -0.9], [0, -pi / 8, 0]), "l_ankle", "l_knee")
-        self.tree.add(SE3([0, 0, -0.9], [0, 0, 0]), "r_ankle", "r_knee")
-        self.tree.add(SE3([0.2, 0, 0], [0, 0, 0]), "l_foot", "l_ankle")
-        self.tree.add(SE3([0.2, 0, 0], [0, 0, 0]), "r_foot", "r_ankle")
+        self.tree.add(SE3([1, 2, 3, 0, 0, 0]), "body", "origin")
+        self.tree.add(SE3([0, 0, 0.5, 0, 0, -pi / 3]), "head", "body")
+        self.tree.add(SE3([0, 1, 0, 0, 0, 0]), "l_shoulder", "body")
+        self.tree.add(SE3([0, -1, 0, 0, 0, 0]), "r_shoulder", "body")
+        self.tree.add(SE3([0, 0, -0.7, 0, -pi / 6, 0]), "l_elbow", "l_shoulder")
+        self.tree.add(SE3([0, 0, -0.7, 0, -pi / 3, 0]), "r_elbow", "r_shoulder")
+        self.tree.add(SE3([0, 0, -0.6, 0, 0, 0]), "l_wrist", "l_elbow")
+        self.tree.add(SE3([0, 0, -0.6, 0, 0, 0]), "r_wrist", "r_elbow")
+        self.tree.add(SE3([0, 0, -1, 0, 0, pi / 8]), "waist", "body")
+        self.tree.add(SE3([0, 0.4, 0, 0, -pi / 4, 0]), "l_hip", "waist")
+        self.tree.add(SE3([0, -0.4, 0, 0, 0, 0]), "r_hip", "waist")
+        self.tree.add(SE3([0, 0, -1.2, 0, pi / 2, 0]), "l_knee", "l_hip")
+        self.tree.add(SE3([0, 0, -1.2, 0, 0, 0]), "r_knee", "r_hip")
+        self.tree.add(SE3([0, 0, -0.9, 0, -pi / 8, 0]), "l_ankle", "l_knee")
+        self.tree.add(SE3([0, 0, -0.9, 0, 0, 0]), "r_ankle", "r_knee")
+        self.tree.add(SE3([0.2, 0, 0, 0, 0, 0]), "l_foot", "l_ankle")
+        self.tree.add(SE3([0.2, 0, 0, 0, 0, 0]), "r_foot", "r_ankle")
 
     def test_str(self):
         print("\ntest_frame_tree_str_method")
@@ -61,21 +61,21 @@ class FrameTreeTests(unittest.TestCase):
         """Adding an orphaned coordinate frame"""
         print("\ntest_disjoint_validation")
         self.tree.add(
-            SE3([1, 0, 0], [0, 0, 0]), "disconnected_child", "disconnected_parent"
+            SE3([1, 0, 0, 0, 0, 0]), "disconnected_child", "disconnected_parent"
         )
         self.assertFalse(self.tree.validate())
 
     def test_disjoint_root_search_exception(self):
         print("\ntest_disjoint_root_search_exception")
         self.tree.add(
-            SE3([1, 0, 0], [0, 0, 0]), "disconnected_child", "disconnected_parent"
+            SE3([1, 0, 0, 0, 0, 0]), "disconnected_child", "disconnected_parent"
         )
         self.assertRaises(FrameTreeValidationError, self.tree.root_frame)
 
     def test_disjoint_traversal_exception(self):
         print("\ntest_disjoint_traversal_exception")
         self.tree.add(
-            SE3([1, 0, 0], [0, 0, 0]), "disconnected_child", "disconnected_parent"
+            SE3([1, 0, 0, 0, 0, 0]), "disconnected_child", "disconnected_parent"
         )
         self.assertRaises(
             FrameTreeValidationError, self.tree.get_transform_to_root, "l_foot"

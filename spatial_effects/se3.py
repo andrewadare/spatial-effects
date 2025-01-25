@@ -7,6 +7,7 @@ from .conversions import (
     so3_to_quaternion,
 )
 from .common import in_so3
+from .so3 import so3_jacobian, inv_so3_jacobian
 
 
 class SE3:
@@ -41,9 +42,9 @@ class SE3:
         """Construct an SE(3) object using any of the following:
 
         - no positional args (identity transformation)
-        - a 4x4 matrix [[R,t],[0s,1]]
         - another SE(3) object
-        - a translation 3-vector and a rotation vector
+        - a 4x4 matrix [[R, t], [0s, 1]]
+        - a 6 dof vector [rho, phi] where R = exp(phi^) and t = J @ rho
         - a translation 3-vector and a 3x3 rotation matrix
         - a translation 3-vector and a Hamilton unit quaternion (w,x,y,z)
         """
@@ -55,33 +56,39 @@ class SE3:
             return
 
         if len(args) == 1:
-            if isinstance(args[0], np.ndarray) and args[0].shape == (4, 4):
-                T = args[0]
-                self._R = T[:3, :3]
-                self._t = T[:3, 3]
-            elif isinstance(args[0], SE3):
-                self._R = args[0].R
-                self._t = args[0].t
+            arg = args[0]
+            if isinstance(arg, SE3):
+                self._R = arg.R
+                self._t = arg.t
             else:
-                raise ValueError("Positional arg must be a 4x4 array or SE(3) object")
+                arg = np.asarray(arg)
+                if arg.shape == (4, 4):
+                    self._R = arg[:3, :3]
+                    self._t = arg[:3, 3]
+                elif arg.shape in [(6,), (6, 1), (1, 6)]:
+                    pose = SE3.exp(arg)
+                    self._R = pose.R
+                    self._t = pose.t
+                else:
+                    raise ValueError(
+                        f"Cannot interpret arg as a 4x4 matrix or 6-vector: {arg=}"
+                    )
         elif len(args) == 2:
             trans, rot = np.asarray(args[0]), np.asarray(args[1])
 
-            assert trans.size == 3, f"Translation must be a 3-vector: {trans.size}"
+            assert trans.size == 3, f"Translation must be a 3-vector: {trans.size=}"
 
             self._t = trans.ravel()
 
-            if rot.size == 3:
-                self._R = rvec_to_so3(rot)
-            elif rot.size == 4:
-                self._R = quaternion_to_so3(rot)
+            if rot.size == 4:
+                self._R = quaternion_to_so3(rot.ravel())
             elif rot.shape == (3, 3):
                 if not in_so3(rot):
-                    raise ValueError(f"Invalid rotation matrix:\n{rot}")
+                    raise ValueError(f"Invalid rotation matrix:\n{rot=}")
                 self._R = rot
             else:
                 raise ValueError(
-                    f"Cannot identify rotation by array dimensions: {rot.shape}"
+                    f"Rotation (2nd arg) must be either a 3x3 matrix or a quaternion: {rot=}"
                 )
         else:
             raise ValueError(
@@ -101,23 +108,27 @@ class SE3:
             raise ValueError("Comparison with a non-SE3 object")
         return np.allclose(self.matrix, other.matrix)
 
-    def __add__(self, vec: np.ndarray):
-        """Returns an SE(3) object updated by a 6 DOF vector [x, r]."""
+    def __add__(self, vec: np.ndarray) -> "SE3":
+        """Right (+) operator for SE(3): self + vec.
+
+        See https://arxiv.org/abs/1812.01537, eq 25
+
+        """
         if not isinstance(vec, np.ndarray) or vec.size != 6:
             raise ValueError(
                 "Addition must be performed with a 6 DOF Euclidean vector"
                 " [x, y, z, r1, r2, r3]"
             )
-        vec = vec.ravel()
-        return SE3(self.matrix @ SE3(vec[:3], vec[3:]).matrix)
+        return self * SE3.exp(vec)
 
-    def __sub__(self, other):
-        """Returns a 6 DOF Euclidean vector [dx, dy, dz, dr1, dr2, dr3]
-        as the difference between two SE(3) objects.
+    def __sub__(self, other) -> np.ndarray:
+        """Right (-) operator for SE(3): self - other.
+
+        See https://arxiv.org/abs/1812.01537, eq 26
         """
         if not isinstance(other, SE3):
             raise ValueError("Subtraction with a non-SE3 object")
-        return SE3(other.inverse.matrix @ self.matrix).vec
+        return SE3.log(other.inverse * self)
 
     def __mul__(self, other):
         """Matrix multiplication operator: if `other` is an SE3 object, returns
@@ -130,6 +141,21 @@ class SE3:
             return self(other)
         else:
             raise ValueError("* operator must be followed by an SE3 or array object.")
+
+    @staticmethod
+    def exp(tau: np.ndarray) -> "SE3":
+        assert tau.shape in [(6,), (6, 1)], f"{tau=}"
+        rho, phi = tau[:3], tau[3:]
+        J = so3_jacobian(phi)
+        R = rvec_to_so3(phi)
+        t = J @ rho
+        return SE3(t, R)
+
+    @staticmethod
+    def log(pose: "SE3") -> np.ndarray:
+        phi = so3_to_rvec(pose.R)
+        rho = inv_so3_jacobian(phi) @ pose.t
+        return np.hstack([rho, phi])
 
     @property
     def inverse(self):
@@ -177,4 +203,4 @@ class SE3:
 
     @property
     def vec(self):
-        return np.hstack([self._t, so3_to_rvec(self._R)])
+        return SE3.log(self)

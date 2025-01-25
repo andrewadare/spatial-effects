@@ -4,6 +4,8 @@ from typing import Union
 
 import numpy as np
 
+EPSILON = np.finfo(np.float64).eps
+
 
 class Basis(Enum):
     """Enumeration constants for interpreting a coordinate triplet (x, y, z) in
@@ -125,16 +127,36 @@ def cross_product_matrix(a, b, c):
     return np.array([[0.0, -c, b], [c, 0.0, -a], [-b, a, 0.0]])
 
 
-def skew(v_: Union[np.ndarray, float]) -> np.ndarray:
-    """Returns skew-symmetric cross product matrix S from a 3-vector or scalar v.
-    If v is 1-dimensional, S will be 2x2; if v is 3-dimensional, S is 3x3.
+def skew(a: Union[np.ndarray, float]) -> np.ndarray:
+    """Returns a^ from a vector or scalar a. Same as [a]_x in 1d or 3d.
+
+    1-d: a^ is 2x2
+    3-d: a^ is 3x3 (cross product matrix)
+    6-d: a^ is 4x4
+
+    The 6dof result is not antisymmetric (abuses terminology). If a = [rho, phi]
+    where rho and phi are translational and rotational 3-vectors respectively,
+    the result is
+
+        [[phi^, rho], [0, 0]].
+
+    References
+    ----------
+
+    http://asrl.utias.utoronto.ca/~tdb/bib/barfoot_ser17.pdf, eq 7.10, 7.14.
+
     """
 
-    v = np.asarray(v_).ravel()
+    v = np.asarray(a).ravel()
 
+    if v.size == 1:
+        return np.array([[0, -v[0]], [v[0], 0.0]])
     if v.size == 3:
         return np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0.0]])
-    elif v.size == 1:
-        return np.array([[0, -v[0]], [v[0], 0.0]])
-    else:
-        raise ValueError(f"v must have 1 or 3 components: {v}")
+    if v.size == 6:
+        S = np.zeros([4, 4])
+        S[:3, :3] = skew(v[3:6])
+        S[:3, 3] = v[:3]
+        return S
+
+    raise ValueError(f"v must have 1 or 3 components: {v}")

@@ -1,5 +1,3 @@
-__version__ = "0.4.0"
-
 from .axis_angle import *
 from .common import *
 from .conversions import *

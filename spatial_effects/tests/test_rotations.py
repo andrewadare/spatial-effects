@@ -82,3 +82,11 @@ class RotationTests(unittest.TestCase):
                 Rinv = b.to(a)
                 self.check_eq(Rinv @ R, np.eye(3))
                 self.check_eq(R @ Rinv, np.eye(3))
+
+    def test_so3_jac_identity(self):
+        print("\ntest_so3_jac_identity")
+        rs = sfx.rrand(100)
+        for rot_vec in rs:
+            J = sfx.so3_jacobian(rot_vec)
+            Jinv = sfx.inv_so3_jacobian(rot_vec)
+            self.check_eq(J @ Jinv, np.eye(3))
